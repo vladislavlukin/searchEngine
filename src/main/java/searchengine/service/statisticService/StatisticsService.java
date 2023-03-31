@@ -1,7 +1,6 @@
-package searchengine.services.statistics;
+package searchengine.service.statisticService;
 
-import searchengine.dto.statistics.StatisticsResponse;
-import searchengine.model.lemma.IndexRepository;
+import searchengine.dto.statistic.StatisticsResponse;
 import searchengine.model.lemma.LemmaRepository;
 import searchengine.model.site.PageRepository;
 import searchengine.model.site.SiteRepository;

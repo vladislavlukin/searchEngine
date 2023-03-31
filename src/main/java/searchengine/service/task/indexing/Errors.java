@@ -1,12 +1,14 @@
-package searchengine.services.indexing;
+package searchengine.service.task.indexing;
 
+
+import searchengine.service.indexingService.IndexingService;
 
 import java.util.List;
 import java.util.Set;
 
-public class ResponseIndexing {
+public class Errors {
     public static String textError;
-    public static boolean responseError(Set<String> sites, List<Thread> thread, StartIndexing startIndexing){
+    public static boolean responseError(Set<String> sites, List<Thread> thread, IndexingService indexingService){
         if (sites == null || sites.isEmpty()) {
             textError = "Добавтье не менее одного сайта или обновите текущий";
             return true;
@@ -22,7 +24,7 @@ public class ResponseIndexing {
         }
         int stop = 0;
         for (String nameSite : sites){
-            if(!startIndexing.statusIndexing(nameSite)){
+            if(!indexingService.statusIsIndexing(nameSite)){
                 stop++;
             }
         }

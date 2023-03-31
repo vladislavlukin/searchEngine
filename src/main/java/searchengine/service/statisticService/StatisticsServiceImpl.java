@@ -1,11 +1,11 @@
-package searchengine.services.statistics;
+package searchengine.service.statisticService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import searchengine.dto.statistics.DetailedStatisticsItem;
-import searchengine.dto.statistics.StatisticsData;
-import searchengine.dto.statistics.StatisticsResponse;
-import searchengine.dto.statistics.TotalStatistics;
+import searchengine.dto.statistic.DetailedStatisticsItem;
+import searchengine.dto.statistic.StatisticsData;
+import searchengine.dto.statistic.StatisticsResponse;
+import searchengine.dto.statistic.TotalStatistics;
 import searchengine.model.lemma.LemmaRepository;
 import searchengine.model.site.PageRepository;
 import searchengine.model.site.SiteRepository;

@@ -1,6 +1,5 @@
-package searchengine.controllers;
+package searchengine.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -9,22 +8,22 @@ import org.springframework.web.bind.annotation.RestController;
 import searchengine.dto.indexing.RequestResponse;
 import searchengine.dto.search.SearchFormat;
 import searchengine.dto.search.SearchResponse;
-import searchengine.dto.statistics.StatisticsResponse;
+import searchengine.dto.statistic.StatisticsResponse;
 import searchengine.model.lemma.IndexRepository;
 import searchengine.model.lemma.LemmaRepository;
 import searchengine.model.site.PageRepository;
 import searchengine.model.site.Site;
 import searchengine.model.site.SiteRepository;
-import searchengine.model.site.Status;
-import searchengine.services.indexing.*;
-import searchengine.services.search.SearchService;
-import searchengine.services.statistics.StatisticsService;
+import searchengine.service.indexingService.IndexingService;
+import searchengine.service.indexingService.LemmaService;
+import searchengine.service.indexingService.SiteService;
+import searchengine.service.searchService.SearchService;
+import searchengine.service.statisticService.StatisticsService;
+import searchengine.service.task.indexing.Errors;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static java.lang.Thread.sleep;
 
 @RestController
 @RequestMapping("/api")
@@ -37,7 +36,7 @@ public class ApiController {
     private final LemmaRepository lemmaRepository;
     private final IndexRepository indexRepository;
     private Set<String> sites = new HashSet<>();
-    private List<Thread> thread;
+    private List<Thread> thread = new ArrayList<>();
     private String nameURL;
 
     public ApiController(StatisticsService statisticsService, SearchService searchService,
@@ -53,35 +52,25 @@ public class ApiController {
     }
     @PostMapping("/indexPage")
     public void addSite(Site site) {
+        SiteService siteService = new SiteService(siteRepository,pageRepository);
         nameURL = site.getUrl();
-        AddSite addSite = new AddSite(siteRepository,pageRepository, lemmaRepository,
-                indexRepository, nameURL, sites, thread);
-        addSite.addUpdate();
-        sites = new HashSet<>(addSite.returnSites());
+        sites = siteService.addSite(nameURL, thread, sites);
     }
 
     @GetMapping("/startIndexing")
     public ResponseEntity<RequestResponse> startIndexing() throws Exception {
-        LemmaIndexing lemmaIndexing = new LemmaIndexing(pageRepository, lemmaRepository, indexRepository);
-        StartIndexing startIndexing = new StartIndexing(siteRepository, pageRepository, lemmaIndexing);
-        if(ResponseIndexing.responseError(sites, thread, startIndexing)){
-            return ResponseEntity.ok(new RequestResponse(false, ResponseIndexing.textError));
+        LemmaService lemmaService = new LemmaService(pageRepository, lemmaRepository, indexRepository);
+        IndexingService indexingService = new IndexingService(siteRepository, pageRepository, lemmaService);
+        if(Errors.responseError(sites, thread, indexingService)){
+            return ResponseEntity.ok(new RequestResponse(false, Errors.textError));
         }
-        thread = new ArrayList<>();
-        for (String nameSite : sites) {
-            thread.add(new Thread(() -> {
-                startIndexing.startIndexing(nameSite);
-            }));
-        }
-        sleep(1000);
-        thread.forEach(Thread::start);
-
+        thread = indexingService.startThread(sites);
         return ResponseEntity.ok(new RequestResponse(true, ""));
     }
     @GetMapping("/stopIndexing")
     public ResponseEntity<RequestResponse> stopIndexing() {
-        if (StopIndexing.stop(sites, siteRepository) > 0) {
-            thread.forEach(Thread::stop);
+        IndexingService indexingService = new IndexingService(siteRepository);
+        if (indexingService.isIndexing(thread, sites)) {
             return ResponseEntity.ok(new RequestResponse(true, ""));
         }
         return ResponseEntity.ok(new RequestResponse(false, "Индексация не запущена"));

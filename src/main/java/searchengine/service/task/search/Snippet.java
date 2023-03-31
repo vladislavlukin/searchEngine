@@ -1,27 +1,21 @@
-package searchengine.services.search;
+package searchengine.service.task.search;
 
+import lombok.Data;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import searchengine.model.site.PageRepository;
-import searchengine.services.LemmaFinder;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-
-public class SearchSnippet {
-    public SearchSnippet(PageRepository pageRepository, Set<String> lemma) {
-        this.pageRepository = pageRepository;
+@Data
+public class Snippet {
+    public Snippet(Set<String> lemma) {
         this.lemma = lemma;
     }
-
-    private PageRepository pageRepository;
     private Set<String> lemma;
-    private StringBuilder stringBuilder = new StringBuilder();
+    private StringBuilder stringSnippet = new StringBuilder();
 
-    public void workOfContent(String text) {
+    private void workOfContent(String text) {
         Document doc = Jsoup.parse(text);
         String allText = " ";
         for (String word : lemma) {
@@ -65,15 +59,13 @@ public class SearchSnippet {
                     }
                 }
             }
-        stringBuilder.append(result);
+        stringSnippet.append(result);
         }
-    public String search (String path, String url){
+    public void search (String path, String url, PageRepository pageRepository){
         pageRepository.findAll().forEach(page -> {
             if(page.getPath().equals(path) && page.getSite().getUrl().equals(url)){
                 workOfContent(page.getContent());
             }
         });
-
-        return stringBuilder.toString();
     }
 }
