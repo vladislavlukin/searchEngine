@@ -1,4 +1,4 @@
-package searchengine.service.statisticService;
+package searchengine.service.statistic;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

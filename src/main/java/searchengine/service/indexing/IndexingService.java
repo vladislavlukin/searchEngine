@@ -1,9 +1,9 @@
-package searchengine.service.indexingService;
+package searchengine.service.indexing;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import searchengine.model.site.*;
-import searchengine.service.task.indexing.SiteMap;
+import searchengine.service.task.indexing.SiteMapTask;
 
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
@@ -16,7 +16,7 @@ public class IndexingService {
     private LemmaService lemmaService;
     private PageRepository pageRepository;
     private String url;
-    private Status status;
+    private final Set<String> sites = new HashSet<>();
 
     public IndexingService(SiteRepository siteRepository, PageRepository pageRepository, LemmaService lemmaService) {
         this.lemmaService = lemmaService;
@@ -31,7 +31,7 @@ public class IndexingService {
         url = nameURL;
         siteRepository.findAll().forEach(site -> {
             try {
-                if (site.getUrl().equals(url) && statusIsIndexing(url)) {
+                if (site.getUrl().equals(url) && site.getStatus().equals(Status.INDEXING)) {
                     addPage(site);
                     lemmaService.lemmaIndexing(site);
                     site.setStatus(Status.INDEXED);
@@ -44,7 +44,7 @@ public class IndexingService {
         });
     }
     private Set<String> siteMap() {
-        String name = new ForkJoinPool().invoke(new SiteMap(url));
+        String name = new ForkJoinPool().invoke(new SiteMapTask(url));
         Set<String> map = new TreeSet<>();
         String[] token = name.split("\n");
         for (String s : token) {
@@ -80,7 +80,10 @@ public class IndexingService {
             throw new RuntimeException(e);
         }
     }
-    public List<Thread> startThread(Set<String> sites) throws InterruptedException {
+    public List<Thread> startThread() throws InterruptedException {
+        siteRepository.findAll().forEach(site -> {
+            sites.add(site.getUrl());
+        });
         List <Thread> thread = new ArrayList<>();
         for (String nameSite : sites) {
             thread.add(new Thread(() -> {
@@ -91,36 +94,23 @@ public class IndexingService {
         thread.forEach(Thread::start);
         return thread;
     }
-    private Integer stopIndexing(Set<String> sites) {
+
+    private Integer stopIndexing() {
         AtomicInteger i = new AtomicInteger();
         siteRepository.findAll().forEach(site -> {
-            sites.forEach(s -> {
-                if (site.getUrl().equals(s) && site.getStatus().equals(Status.INDEXING)) {
-                    site.setStatus(Status.INDEXED);
-                    site.setError("Индексация остановлена пользователем");
-                    site.setCreationTime(null);
-                    siteRepository.save(site);
-                    i.getAndIncrement();
-                }
-            });
+            if (site.getStatus().equals(Status.INDEXING)) {
+                site.setStatus(Status.INDEXED);
+                site.setError("Индексация остановлена пользователем");
+                site.setCreationTime(null);
+                siteRepository.save(site);
+                i.getAndIncrement();
+            }
         });
         return i.get();
     }
-
-    public boolean isIndexing(List<Thread> threads, Set<String> sites) {
-        if (stopIndexing(sites) > 0) {
+    public boolean isIndexing(List<Thread> threads) {
+        if (stopIndexing() > 0) {
             threads.forEach(Thread::stop);
-            return true;
-        }
-        return false;
-    }
-    public boolean statusIsIndexing(String nameURL){
-        siteRepository.findAll().forEach(site -> {
-            if(site.getUrl().equals(nameURL)){
-                status = site.getStatus();
-            }
-        });
-        if (status.equals(Status.INDEXING)){
             return true;
         }
         return false;

@@ -1,15 +1,26 @@
 package searchengine.service.task.indexing;
 
 
-import searchengine.service.indexingService.IndexingService;
+import searchengine.model.site.SiteRepository;
+import searchengine.model.site.Status;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class Errors {
+public class ErrorsHandler {
     public static String textError;
-    public static boolean responseError(Set<String> sites, List<Thread> thread, IndexingService indexingService){
-        if (sites == null || sites.isEmpty()) {
+    public static boolean returnError(SiteRepository siteRepository, List<Thread> thread){
+        AtomicInteger stop = new AtomicInteger();
+        Set<String> sites = new HashSet<>();
+        siteRepository.findAll().forEach(site -> {
+            sites.add(site.getUrl());
+            if(!site.getStatus().equals(Status.INDEXING)){
+                stop.getAndIncrement();
+            }
+        });
+        if (sites.isEmpty()) {
             textError = "Добавтье не менее одного сайта или обновите текущий";
             return true;
         }
@@ -22,13 +33,8 @@ public class Errors {
                 }
             }
         }
-        int stop = 0;
-        for (String nameSite : sites){
-            if(!indexingService.statusIsIndexing(nameSite)){
-                stop++;
-            }
-        }
-        if(stop == sites.size()){
+
+        if(stop.get() == sites.size()){
             textError = "Все сайты проиндексированы или с ошибкой!" +
                     " Если только добавили сайт, то поробуйте запустить индаксацию позднее.";
             return true;

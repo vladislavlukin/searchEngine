@@ -1,4 +1,4 @@
-package searchengine.service.indexingService;
+package searchengine.service.indexing;
 
 import searchengine.model.lemma.Identifier;
 import searchengine.model.lemma.IndexRepository;

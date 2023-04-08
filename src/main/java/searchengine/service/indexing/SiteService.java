@@ -1,4 +1,4 @@
-package searchengine.service.indexingService;
+package searchengine.service.indexing;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -8,6 +8,7 @@ import searchengine.model.site.Site;
 import searchengine.model.site.SiteRepository;
 import searchengine.model.site.Status;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -42,7 +43,8 @@ public class SiteService {
         }
         return indexingSite;
     }
-    public Set<String> addSite(String url, List<Thread> thread, Set<String> sites){
+    public void addSite(String url, List<Thread> thread){
+        Set<String> sites = new HashSet<>();
         siteRepository.findAll().forEach(site -> {
             sites.add(site.getUrl());
         });
@@ -54,7 +56,6 @@ public class SiteService {
             siteRepository.save(site(url));
             sites.add(url);
         }
-        return sites;
     }
     private void deleteSite(String url){
         siteRepository.findAll().forEach(s -> {

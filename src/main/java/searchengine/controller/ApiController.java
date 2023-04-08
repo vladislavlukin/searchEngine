@@ -14,12 +14,12 @@ import searchengine.model.lemma.LemmaRepository;
 import searchengine.model.site.PageRepository;
 import searchengine.model.site.Site;
 import searchengine.model.site.SiteRepository;
-import searchengine.service.indexingService.IndexingService;
-import searchengine.service.indexingService.LemmaService;
-import searchengine.service.indexingService.SiteService;
-import searchengine.service.searchService.SearchService;
-import searchengine.service.statisticService.StatisticsService;
-import searchengine.service.task.indexing.Errors;
+import searchengine.service.indexing.IndexingService;
+import searchengine.service.indexing.LemmaService;
+import searchengine.service.indexing.SiteService;
+import searchengine.service.search.SearchService;
+import searchengine.service.statistic.StatisticsService;
+import searchengine.service.task.indexing.ErrorsHandler;
 
 import java.io.IOException;
 import java.util.*;
@@ -35,9 +35,7 @@ public class ApiController {
     private final PageRepository pageRepository;
     private final LemmaRepository lemmaRepository;
     private final IndexRepository indexRepository;
-    private Set<String> sites = new HashSet<>();
     private List<Thread> thread = new ArrayList<>();
-    private String nameURL;
 
     public ApiController(StatisticsService statisticsService, SearchService searchService,
                          SiteRepository siteRepository, PageRepository pageRepository,
@@ -53,24 +51,23 @@ public class ApiController {
     @PostMapping("/indexPage")
     public void addSite(Site site) {
         SiteService siteService = new SiteService(siteRepository,pageRepository);
-        nameURL = site.getUrl();
-        sites = siteService.addSite(nameURL, thread, sites);
+        siteService.addSite(site.getUrl(), thread);
     }
 
     @GetMapping("/startIndexing")
     public ResponseEntity<RequestResponse> startIndexing() throws Exception {
         LemmaService lemmaService = new LemmaService(pageRepository, lemmaRepository, indexRepository);
         IndexingService indexingService = new IndexingService(siteRepository, pageRepository, lemmaService);
-        if(Errors.responseError(sites, thread, indexingService)){
-            return ResponseEntity.ok(new RequestResponse(false, Errors.textError));
+        if(ErrorsHandler.returnError(siteRepository, thread)){
+            return ResponseEntity.ok(new RequestResponse(false, ErrorsHandler.textError));
         }
-        thread = indexingService.startThread(sites);
+        thread = indexingService.startThread();
         return ResponseEntity.ok(new RequestResponse(true, ""));
     }
     @GetMapping("/stopIndexing")
     public ResponseEntity<RequestResponse> stopIndexing() {
         IndexingService indexingService = new IndexingService(siteRepository);
-        if (indexingService.isIndexing(thread, sites)) {
+        if (indexingService.isIndexing(thread)) {
             return ResponseEntity.ok(new RequestResponse(true, ""));
         }
         return ResponseEntity.ok(new RequestResponse(false, "Индексация не запущена"));

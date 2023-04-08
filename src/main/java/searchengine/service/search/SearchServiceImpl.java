@@ -1,4 +1,4 @@
-package searchengine.service.searchService;
+package searchengine.service.search;
 
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
@@ -12,8 +12,8 @@ import searchengine.model.lemma.IndexRepository;
 import searchengine.model.lemma.LemmaRepository;
 import searchengine.model.site.*;
 import searchengine.service.task.indexing.LemmaFinder;
-import searchengine.service.task.search.Relevance;
-import searchengine.service.task.search.Snippet;
+import searchengine.service.task.search.RelevanceCalculator;
+import searchengine.service.task.search.SnippetGenerator;
 
 import java.io.IOException;
 import java.util.*;
@@ -44,7 +44,7 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public SearchResponse getSearch(SearchFormat searchFormat, SiteRepository siteRepository, PageRepository pageRepository, LemmaRepository lemmaRepository, IndexRepository indexRepository) throws IOException {
-        Relevance searchRelevance = new Relevance();
+        RelevanceCalculator relevanceCalculator = new RelevanceCalculator();
         SearchResponse response = new SearchResponse();
         SearchData data = new SearchData();
         lemmaMap = new HashMap<>();
@@ -54,7 +54,7 @@ public class SearchServiceImpl implements SearchService {
             return response;
         }
         Set<String> lemmaSet = new HashSet<>(LemmaFinder.getInstance().getLemmaSet(searchFormat.getQuery()));
-        Snippet searchSnippet = new Snippet(lemmaSet);
+        SnippetGenerator snippetGenerator = new SnippetGenerator(lemmaSet);
         for (String lemma : lemmaSet) {
             lemmaRepository.findAll().forEach(l -> {
                 if (lemma.equals(l.getLemma())) {
@@ -62,10 +62,10 @@ public class SearchServiceImpl implements SearchService {
                 }
             });
         }
-        searchRelevance.addUrl(siteRepository,searchFormat);
-        searchRelevance.mapFinalPage(lemmaMap, lemmaRepository, indexRepository);
-        relevanceMap = new HashMap<>(searchRelevance.getRelevanceMap());
-        int max = searchRelevance.getMax();
+        relevanceCalculator.addUrl(siteRepository,searchFormat);
+        relevanceCalculator.mapFinalPage(lemmaMap, lemmaRepository, indexRepository);
+        relevanceMap = new HashMap<>(relevanceCalculator.getRelevanceMap());
+        int max = relevanceCalculator.getMax();
         if(max == 0){
             return response;
         }
@@ -79,8 +79,8 @@ public class SearchServiceImpl implements SearchService {
         String siteName = page.getSite().getName();
         String copySite = page.getSite().getUrl();
         String site = copySite.substring(0, copySite.length() - 1);
-        searchSnippet.search(path, copySite, pageRepository);
-        String snippet = searchSnippet.getStringSnippet().toString();
+        snippetGenerator.search(path, copySite, pageRepository);
+        String snippet = snippetGenerator.getStringSnippet().toString();
         String title = "";
         try {
             title = title(site + path);

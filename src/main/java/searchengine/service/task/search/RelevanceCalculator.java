@@ -10,8 +10,7 @@ import searchengine.model.site.SiteRepository;
 import java.util.*;
 import java.util.stream.Collectors;
 @Data
-public class Relevance {
-    private List<Thread> threads = new ArrayList<>();
+public class RelevanceCalculator {
     private Map<Page, Integer> relevanceMap = new HashMap<>();
     private List<String> urlList = new ArrayList<>();
     private int max;

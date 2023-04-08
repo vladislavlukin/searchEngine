@@ -8,17 +8,17 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RecursiveTask;
 
-public class SiteMap extends RecursiveTask<String> {
+public class SiteMapTask extends RecursiveTask<String> {
     private String url;
     private static CopyOnWriteArrayList<String> listCopy = new CopyOnWriteArrayList<>();
 
-    public SiteMap(String url) {
+    public SiteMapTask(String url) {
         this.url = url.trim();
     }
     @Override
     protected String compute() {
         StringBuffer stringBuffer = new StringBuffer(String.format(url + "\n"));
-        List<SiteMap> list = new CopyOnWriteArrayList<>();
+        List<SiteMapTask> list = new CopyOnWriteArrayList<>();
         try {
             Thread.sleep(150);
             Document doc = Jsoup.connect(url)
@@ -33,7 +33,7 @@ public class SiteMap extends RecursiveTask<String> {
                         && !attributeUrl.isEmpty()
                         && attributeUrl.startsWith(url))
                 {
-                    SiteMap work = new SiteMap(attributeUrl);
+                    SiteMapTask work = new SiteMapTask(attributeUrl);
                     work.fork();
                     list.add(work);
                     listCopy.add(attributeUrl);
@@ -43,8 +43,8 @@ public class SiteMap extends RecursiveTask<String> {
         }catch (InterruptedException | IOException e) {
             Thread.currentThread().interrupt();
         }
-        list.sort(Comparator.comparing((SiteMap o) -> o.url));
-        for (SiteMap work : list){
+        list.sort(Comparator.comparing((SiteMapTask o) -> o.url));
+        for (SiteMapTask work : list){
             stringBuffer.append(work.join());
         }
 

@@ -8,8 +8,8 @@ import searchengine.model.site.PageRepository;
 
 import java.util.Set;
 @Data
-public class Snippet {
-    public Snippet(Set<String> lemma) {
+public class SnippetGenerator {
+    public SnippetGenerator(Set<String> lemma) {
         this.lemma = lemma;
     }
     private Set<String> lemma;

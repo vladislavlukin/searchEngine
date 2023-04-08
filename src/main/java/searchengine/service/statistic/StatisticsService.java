@@ -1,4 +1,4 @@
-package searchengine.service.statisticService;
+package searchengine.service.statistic;
 
 import searchengine.dto.statistic.StatisticsResponse;
 import searchengine.model.lemma.LemmaRepository;

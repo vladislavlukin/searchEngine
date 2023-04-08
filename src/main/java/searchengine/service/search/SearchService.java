@@ -1,4 +1,4 @@
-package searchengine.service.searchService;
+package searchengine.service.search;
 
 import searchengine.dto.search.SearchFormat;
 import searchengine.dto.search.SearchResponse;
