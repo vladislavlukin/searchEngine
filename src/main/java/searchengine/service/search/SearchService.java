@@ -10,5 +10,5 @@ import searchengine.model.site.SiteRepository;
 import java.io.IOException;
 
 public interface SearchService {
-    SearchResponse getSearch(SearchFormat searchFormat, SiteRepository siteRepository, PageRepository pageRepository, LemmaRepository lemmaRepository, IndexRepository indexRepository) throws IOException;
+    SearchResponse getResponse(SearchFormat searchFormat, SiteRepository siteRepository, PageRepository pageRepository, LemmaRepository lemmaRepository, IndexRepository indexRepository) throws IOException;
 }

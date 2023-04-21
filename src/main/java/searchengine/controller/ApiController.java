@@ -61,7 +61,7 @@ public class ApiController {
         if(ErrorsHandler.returnError(siteRepository, thread)){
             return ResponseEntity.ok(new RequestResponse(false, ErrorsHandler.textError));
         }
-        thread = indexingService.startThread();
+        thread = indexingService.getThread();
         return ResponseEntity.ok(new RequestResponse(true, ""));
     }
     @GetMapping("/stopIndexing")
@@ -79,6 +79,6 @@ public class ApiController {
     }
     @GetMapping("/search")
     public ResponseEntity<SearchResponse> search(SearchFormat searchFormat) throws IOException {
-        return ResponseEntity.ok(searchService.getSearch(searchFormat, siteRepository, pageRepository, lemmaRepository, indexRepository));
+        return ResponseEntity.ok(searchService.getResponse(searchFormat, siteRepository, pageRepository, lemmaRepository, indexRepository));
     }
 }

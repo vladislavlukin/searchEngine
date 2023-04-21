@@ -1,71 +1,75 @@
 package searchengine.service.task.search;
 
-import lombok.Data;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
-import searchengine.model.site.PageRepository;
 
-import java.util.Set;
-@Data
+import java.util.*;
+
 public class SnippetGenerator {
-    public SnippetGenerator(Set<String> lemma) {
+    public SnippetGenerator(Set<String> lemma, String textQuery) {
         this.lemma = lemma;
+        this.textQuery = textQuery;
     }
-    private Set<String> lemma;
-    private StringBuilder stringSnippet = new StringBuilder();
-
-    private void workOfContent(String text) {
+    private final Set<String> lemma;
+    private final String textQuery;
+    private final Set<String> words = new HashSet<>();
+    private String getReformatText(String text){
         Document doc = Jsoup.parse(text);
-        String allText = " ";
-        for (String word : lemma) {
-            if (doc.text().contains(word) && word.length() > 1) {
-                Elements elements = doc.getElementsContainingOwnText(word);
-                if (!allText.contains(elements.toString())) {
-                    allText += elements + " ";
-                }
+        String allText = "";
+        String[] token = doc.text().split(" ");
+        for (String beginnerWord : lemma){
+            String[] copyToken = allText.split(" ");
+            if(!allText.isEmpty()){
+                token = copyToken;
             }
+            String copyText = " ";
+            for (String finalWord : token){
+                int allowableLengthWord = 3;
+                if((textQuery.contains(finalWord) || finalWord.contains(beginnerWord))
+                        && beginnerWord.length() >= allowableLengthWord
+                        && finalWord.length() >= allowableLengthWord){
+                    words.add(finalWord);
+                    copyText += " <strong>" + finalWord + "</strong>";
+                }else {copyText += " " + finalWord;}
+            }
+            allText = copyText;
         }
-            for(String word : lemma) {
-                allText = allText.replace(word, "<d>" + word + "</d>");
-            }
-        String result = " ";
-            for (String word : lemma){
-                int limitChar = 10;
-                if(allText.split(" ").length < limitChar){
-                    result = allText;
-                    break;
-                }
-                String[] token = allText.split(" ", limitChar);
-                int index = 1;
-                while (index > 0) {
-                    int k = limitChar - 1;
-                    String name = " ";
-                    for (int i = 0; i < limitChar - 1; i++){
-                        name += token[i] + " ";
-                    }
-                    if (name.contains(word)) {
-                        if(!result.contains(name)) {
-                            result += name + " ..... ";
-                        }
-                    }
-                    if(token[k].split(" ").length < limitChar){
-                         if(token[k].contains(word)){
-                             result += token[k] + " ..... ";
-                         }
-                         index = 0;
-                    }else {
-                        token = token[k].split(" ", limitChar);
-                    }
-                }
-            }
-        stringSnippet.append(result);
-        }
-    public void search (String path, String url, PageRepository pageRepository){
-        pageRepository.findAll().forEach(page -> {
-            if(page.getPath().equals(path) && page.getSite().getUrl().equals(url)){
-                workOfContent(page.getContent());
-            }
-        });
+        return allText;
     }
+    private List<String> getAllSnippets(String[] token){
+        int stopIndex = 0;
+        int countWordOfSnippet = 30;
+        String snippet = " ";
+        List<String> listSnippet = new ArrayList<>();
+        for (String word : token){
+            snippet += " " + word;
+            if(stopIndex == countWordOfSnippet){
+                listSnippet.add(snippet);
+                stopIndex = 0;
+                snippet = " ";
+            }
+            stopIndex++;
+        }
+        return listSnippet;
+    }
+
+    public String getSnippet(String text) {
+        String resultSnippet = " ";
+        String[] token = getReformatText(text).split(" ");
+        Map<Integer, String> ratingSnippets = new HashMap<>();
+        for (String snippet : getAllSnippets(token)) {
+            List<String> listSnippet = new ArrayList<>();
+                for (String word : words) {
+                    if(snippet.contains(word)){
+                        listSnippet.add(snippet);
+                    }
+                }
+                ratingSnippets.put(listSnippet.size(), snippet);
+            }
+        for (Map.Entry<Integer, String> entry : ratingSnippets.entrySet()){
+            resultSnippet = entry.getValue();
+        }
+
+        return resultSnippet;
+        }
 }

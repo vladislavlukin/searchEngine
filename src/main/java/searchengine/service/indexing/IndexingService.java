@@ -32,7 +32,7 @@ public class IndexingService {
         siteRepository.findAll().forEach(site -> {
             try {
                 if (site.getUrl().equals(url) && site.getStatus().equals(Status.INDEXING)) {
-                    addPage(site);
+                    addPages(site);
                     lemmaService.lemmaIndexing(site);
                     site.setStatus(Status.INDEXED);
                     site.setCreationTime(null);
@@ -43,7 +43,7 @@ public class IndexingService {
             }
         });
     }
-    private Set<String> siteMap() {
+    private Set<String> getSiteMap() {
         String name = new ForkJoinPool().invoke(new SiteMapTask(url));
         Set<String> map = new TreeSet<>();
         String[] token = name.split("\n");
@@ -53,16 +53,16 @@ public class IndexingService {
         return map;
     }
 
-    private Page page(String url, Site site) {
+    private Page getPage(String urlSite, Site site) {
         Page page = new Page();
         int ok = 200;
         int error = 404;
-        String uri = url.substring(url.length() - 1);
+        String uri = urlSite.substring(url.length() - 1);
         page.setCode(ok);
         page.setPath(uri);
         page.setSite(site);
         try {
-            Document doc = Jsoup.connect(url).get();
+            Document doc = Jsoup.connect(urlSite).get();
             page.setContent(doc.html());
         } catch (Exception ex) {
             page.setCode(error);
@@ -70,17 +70,37 @@ public class IndexingService {
         return page;
     }
 
-    private void addPage(Site site) {
+    private void addPages(Site site) {
         try {
-            for (String url : siteMap()) {
-                pageRepository.save(page(url, site));
+            for (String url : getSiteMap()) {
+                pageRepository.save(getPage(url, site));
                 sleep(150);
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
-    public List<Thread> startThread() throws InterruptedException {
+    private Integer getCountStatusIndexing() {
+        AtomicInteger countStatusIndexing = new AtomicInteger();
+        siteRepository.findAll().forEach(site -> {
+            if (site.getStatus().equals(Status.INDEXING)) {
+                site.setStatus(Status.INDEXED);
+                site.setError("Индексация остановлена пользователем");
+                site.setCreationTime(null);
+                siteRepository.save(site);
+                countStatusIndexing.getAndIncrement();
+            }
+        });
+        return countStatusIndexing.get();
+    }
+    public boolean isIndexing(List<Thread> threads) {
+        if (getCountStatusIndexing() > 0) {
+            threads.forEach(Thread::stop);
+            return true;
+        }
+        return false;
+    }
+    public List<Thread> getThread() throws InterruptedException {
         siteRepository.findAll().forEach(site -> {
             sites.add(site.getUrl());
         });
@@ -93,26 +113,5 @@ public class IndexingService {
         sleep(1000);
         thread.forEach(Thread::start);
         return thread;
-    }
-
-    private Integer stopIndexing() {
-        AtomicInteger i = new AtomicInteger();
-        siteRepository.findAll().forEach(site -> {
-            if (site.getStatus().equals(Status.INDEXING)) {
-                site.setStatus(Status.INDEXED);
-                site.setError("Индексация остановлена пользователем");
-                site.setCreationTime(null);
-                siteRepository.save(site);
-                i.getAndIncrement();
-            }
-        });
-        return i.get();
-    }
-    public boolean isIndexing(List<Thread> threads) {
-        if (stopIndexing() > 0) {
-            threads.forEach(Thread::stop);
-            return true;
-        }
-        return false;
     }
 }

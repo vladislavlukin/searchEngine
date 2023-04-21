@@ -9,6 +9,7 @@ import searchengine.dto.search.SearchData;
 import searchengine.dto.search.SearchFormat;
 import searchengine.dto.search.SearchResponse;
 import searchengine.model.lemma.IndexRepository;
+import searchengine.model.lemma.Lemma;
 import searchengine.model.lemma.LemmaRepository;
 import searchengine.model.site.*;
 import searchengine.service.task.indexing.LemmaFinder;
@@ -22,16 +23,14 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SearchServiceImpl implements SearchService {
-    private Map<String, Integer> lemmaMap;
-    private Map<Page, Integer> relevanceMap;
-    public String title (String url) throws Exception{
+    private String getTitle(String url) throws Exception{
         Document doc = Jsoup.connect(url).get();
         Elements elements = doc.select("title");
         return elements.text();
     }
-    public Map<Page, Integer> sorted(Map<Page, Integer> map) {
+    private Map<Page, Integer> sorted(Map<Page, Integer> map) {
         return map.entrySet().stream()
-                .sorted(Map.Entry.comparingByValue())
+                .sorted(Comparator.comparingInt(e -> -e.getValue()))
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue,
@@ -41,63 +40,62 @@ public class SearchServiceImpl implements SearchService {
                         LinkedHashMap::new
                 ));
     }
-
-    @Override
-    public SearchResponse getSearch(SearchFormat searchFormat, SiteRepository siteRepository, PageRepository pageRepository, LemmaRepository lemmaRepository, IndexRepository indexRepository) throws IOException {
-        RelevanceCalculator relevanceCalculator = new RelevanceCalculator();
-        SearchResponse response = new SearchResponse();
+    private SearchData getData(Page page, float relevance, Set<String> lemmaSet, SearchFormat searchFormat){
+        SnippetGenerator snippetGenerator = new SnippetGenerator(lemmaSet, searchFormat.getQuery());
         SearchData data = new SearchData();
-        lemmaMap = new HashMap<>();
-        if (searchFormat.getQuery().isEmpty()) {
-            response.setResult(false);
-            response.setError("Задан пустой поисковый запрос");
-            return response;
-        }
-        Set<String> lemmaSet = new HashSet<>(LemmaFinder.getInstance().getLemmaSet(searchFormat.getQuery()));
-        SnippetGenerator snippetGenerator = new SnippetGenerator(lemmaSet);
-        for (String lemma : lemmaSet) {
-            lemmaRepository.findAll().forEach(l -> {
-                if (lemma.equals(l.getLemma())) {
-                    lemmaMap.put(lemma, l.getFrequency());
-                }
-            });
-        }
-        relevanceCalculator.addUrl(siteRepository,searchFormat);
-        relevanceCalculator.mapFinalPage(lemmaMap, lemmaRepository, indexRepository);
-        relevanceMap = new HashMap<>(relevanceCalculator.getRelevanceMap());
-        int max = relevanceCalculator.getMax();
-        if(max == 0){
-            return response;
-        }
-        float relevance = 0;
-        Page page = new Page();
-        for (Map.Entry<Page, Integer> entry : sorted(relevanceMap).entrySet()) {
-            relevance = (float) entry.getValue() / max;
-            page = entry.getKey();
-        }
         String path = page.getPath();
         String siteName = page.getSite().getName();
         String copySite = page.getSite().getUrl();
         String site = copySite.substring(0, copySite.length() - 1);
-        snippetGenerator.search(path, copySite, pageRepository);
-        String snippet = snippetGenerator.getStringSnippet().toString();
+        String snippet = snippetGenerator.getSnippet(page.getContent());
         String title = "";
         try {
-            title = title(site + path);
+            title = getTitle(site + path);
         }catch (Exception ex){
             ex.printStackTrace();
         }
-
-
         data.setSite(site);
         data.setRelevance(relevance);
         data.setSiteName(siteName);
         data.setUri(path);
         data.setSnippet(snippet);
         data.setTitle(title);
+        return data;
+    }
+
+    @Override
+    public SearchResponse getResponse(SearchFormat searchFormat, SiteRepository siteRepository, PageRepository pageRepository, LemmaRepository lemmaRepository, IndexRepository indexRepository) throws IOException {
+        Set<String> lemmaSet = new HashSet<>(LemmaFinder.getInstance().getLemmaSet(searchFormat.getQuery()));
+        List<SearchData> listData = new ArrayList<>();
+        RelevanceCalculator relevanceCalculator = new RelevanceCalculator();
+        SearchResponse response = new SearchResponse();
+        if (searchFormat.getQuery().isEmpty()) {
+            response.setResult(false);
+            response.setError("Задан пустой поисковый запрос");
+            return response;
+        }
+        relevanceCalculator.addSites(siteRepository,searchFormat);
+        relevanceCalculator.searchRelevance(lemmaSet, lemmaRepository, indexRepository);
+        Map<Page, Integer> relevanceMap = new HashMap<>(relevanceCalculator.getRelevanceMap());
+        int max = relevanceCalculator.getMaxRank();
+        if(max == 0){
+            return response;
+        }
+        float relevance;
+        Page page;
+        int stopIndex = 10;
+        int i = 0;
+        for (Map.Entry<Page, Integer> entry : sorted(relevanceMap).entrySet()) {
+            if(i++ == stopIndex){
+                break;
+            }
+            relevance = (float) entry.getValue() / max;
+            page = entry.getKey();
+            listData.add(getData(page, relevance, lemmaSet, searchFormat));
+        }
         response.setResult(true);
-        response.setCount(relevanceMap.size());
-        response.setData(data);
+        response.setCount(listData.size());
+        response.setData(listData);
         return response;
 
     }

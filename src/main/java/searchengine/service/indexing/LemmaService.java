@@ -15,73 +15,84 @@ public class LemmaService {
     private final PageRepository pageRepository;
     private final LemmaRepository lemmaRepository;
     private final IndexRepository indexRepository;
-    private final Map<String, Map<Page, Integer>> lemmaOfPage = new HashMap<>();
-    private final Map<String, Integer> copyIndex = new HashMap<>();
+    private final Map<String, Map<Page, Integer>> lemmaOfPagesMap = new HashMap<>();
+    private final Map<String, Integer> lemmaMap = new HashMap<>();
 
     public LemmaService(PageRepository pageRepository, LemmaRepository lemmaRepository, IndexRepository indexRepository) {
         this.pageRepository = pageRepository;
         this.lemmaRepository = lemmaRepository;
         this.indexRepository = indexRepository;
     }
-    private Lemma lemma (Site site, String text, int i){
+    private Lemma getLemma(Site site, String text, int countLemma){
         Lemma lemma = new Lemma();
         lemma.setSite(site);
         lemma.setLemma(text);
-        lemma.setFrequency(i);
+        lemma.setFrequency(countLemma);
 
         return lemma;
     }
-    private Identifier index (Page page, Lemma lemma, int i){
+    private Identifier getIndex(Page page, Lemma lemma, int countLemma){
         Identifier index = new Identifier();
         index.setPage(page);
         index.setLemma(lemma);
-        index.setNumber(i);
+        index.setNumber(countLemma);
 
         return index;
     }
-    private Set<String> lemmaSet (Page page) throws Exception{
-        copyIndex.putAll(LemmaFinder.getInstance().collectLemmas(page.getContent()));
+    private Set<String> getLemmaSet(Page page) throws Exception{
+        lemmaMap.putAll(LemmaFinder.getInstance().collectLemmas(page.getContent()));
         Set<String> lemmaSet = new HashSet<>(LemmaFinder.getInstance().getLemmaSet(page.getContent()));
         return lemmaSet;
+    }
+    private void addLammas (Site site){
+        for(Map.Entry<String, Map<Page, Integer>> result : lemmaOfPagesMap.entrySet()){
+            String lemma = result.getKey();
+            int countLemma = lemmaOfPagesMap.get(lemma).size();
+            lemmaRepository.save(getLemma(site, lemma, countLemma));
+        }
+    }
+    private void addIndexes(Site site){
+        lemmaRepository.findAll().forEach(lemma -> {
+            if(lemma.getSite().getId() == site.getId()){
+                Map<Page, Integer> countLemmaOfPage = new HashMap<>(lemmaOfPagesMap.get(lemma.getLemma()));
+                for (Map.Entry<Page, Integer> result : countLemmaOfPage.entrySet()){
+                    Page page = result.getKey();
+                    int countLemma = result.getValue();
+                    indexRepository.save(getIndex(page, lemma, countLemma));
+                }
+            }
+        });
     }
 
     public void lemmaIndexing(Site site) {
         pageRepository.findAll().forEach(page -> {
             try {
-                if (page.getSite().getId() == site.getId() && page.getCode() == 200) {
-                    for (String lemma : lemmaSet(page)) {
-                        int i;
-                        if(copyIndex.get(lemma) != null){
-                            i = copyIndex.get(lemma);
+                int codeStatus = 200;
+                if (page.getSite().getId() == site.getId() && page.getCode() == codeStatus) {
+                    for (String lemma : getLemmaSet(page)) {
+                        int countLemma;
+                        if(lemmaMap.get(lemma) != null){
+                            countLemma = lemmaMap.get(lemma);
                         }else {
-                            i = 0;
+                            countLemma = 0;
                         }
-                        if(lemmaOfPage.containsKey(lemma)){
-                            Map<Page, Integer> copyCountLemmaOfPage = new HashMap<>(lemmaOfPage.get(lemma));
-                            copyCountLemmaOfPage.put(page, i);
-                            lemmaOfPage.put(lemma, copyCountLemmaOfPage);
+                        Map<Page, Integer> pagesWithCountLemma;
+                        if(lemmaOfPagesMap.containsKey(lemma)){
+                            pagesWithCountLemma = new HashMap<>(lemmaOfPagesMap.get(lemma));
                         }else {
-                            Map<Page, Integer> countLemmaOfPage = new HashMap<>();
-                            countLemmaOfPage.put(page, i);
-                            lemmaOfPage.put(lemma, countLemmaOfPage);
+                            pagesWithCountLemma = new HashMap<>();
                         }
+                        pagesWithCountLemma.put(page, countLemma);
+                        lemmaOfPagesMap.put(lemma, pagesWithCountLemma);
                     }
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
-        for(Map.Entry<String, Map<Page, Integer>> result : lemmaOfPage.entrySet()){
-            lemmaRepository.save(lemma(site, result.getKey(), lemmaOfPage.get(result.getKey()).size()));
-        }
-        lemmaRepository.findAll().forEach(lemma -> {
-            if(lemma.getSite().getId() == site.getId()){
-                Map<Page, Integer> countLemmaOfPage = new HashMap<>(lemmaOfPage.get(lemma.getLemma()));
-                for (Map.Entry<Page, Integer> result : countLemmaOfPage.entrySet()){
-                    indexRepository.save(index(result.getKey(), lemma, result.getValue()));
-                }
-            }
-        });
+        addLammas(site);
+        addIndexes(site);
+        lemmaMap.clear();
+        lemmaOfPagesMap.clear();
     }
-
 }

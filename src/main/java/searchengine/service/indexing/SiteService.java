@@ -20,7 +20,7 @@ public class SiteService {
         this.siteRepository = siteRepository;
         this.pageRepository = pageRepository;
     }
-    private Site site (String url) {
+    private Site getSite(String url) {
         Site indexingSite = new Site();
         indexingSite.setUrl(url);
         indexingSite.setStatus(Status.INDEXING);
@@ -53,7 +53,7 @@ public class SiteService {
             sites.remove(url);
         }
         if (!sites.contains(url) && threadIsNotLive(url, thread) ) {
-            siteRepository.save(site(url));
+            siteRepository.save(getSite(url));
             sites.add(url);
         }
     }
