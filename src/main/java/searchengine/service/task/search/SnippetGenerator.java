@@ -13,6 +13,25 @@ public class SnippetGenerator {
     private final Set<String> lemma;
     private final String textQuery;
     private final Set<String> words = new HashSet<>();
+    public String getSnippet(String text) {
+        String resultSnippet = " ";
+        String[] token = getReformatText(text).split(" ");
+        Map<Integer, String> ratingSnippets = new HashMap<>();
+        for (String snippet : getAllSnippets(token)) {
+            List<String> listSnippet = new ArrayList<>();
+            for (String word : words) {
+                if(snippet.contains(word)){
+                    listSnippet.add(snippet);
+                }
+            }
+            ratingSnippets.put(listSnippet.size(), snippet);
+        }
+        for (Map.Entry<Integer, String> entry : ratingSnippets.entrySet()){
+            resultSnippet = entry.getValue();
+        }
+
+        return resultSnippet;
+    }
     private String getReformatText(String text){
         Document doc = Jsoup.parse(text);
         String allText = "";
@@ -52,24 +71,4 @@ public class SnippetGenerator {
         }
         return listSnippet;
     }
-
-    public String getSnippet(String text) {
-        String resultSnippet = " ";
-        String[] token = getReformatText(text).split(" ");
-        Map<Integer, String> ratingSnippets = new HashMap<>();
-        for (String snippet : getAllSnippets(token)) {
-            List<String> listSnippet = new ArrayList<>();
-                for (String word : words) {
-                    if(snippet.contains(word)){
-                        listSnippet.add(snippet);
-                    }
-                }
-                ratingSnippets.put(listSnippet.size(), snippet);
-            }
-        for (Map.Entry<Integer, String> entry : ratingSnippets.entrySet()){
-            resultSnippet = entry.getValue();
-        }
-
-        return resultSnippet;
-        }
 }

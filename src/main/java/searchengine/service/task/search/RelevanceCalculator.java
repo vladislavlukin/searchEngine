@@ -18,40 +18,6 @@ public class RelevanceCalculator {
     private final Map<Page, Integer> relevanceMap = new HashMap<>();
     private final List<Site> siteList = new ArrayList<>();
     private int maxRank;
-
-    private void calculateMaxRank(int rank) {
-        if (rank > maxRank) {
-            maxRank = rank;
-        }
-    }
-
-    public Map<Lemma, Integer> sorted(Map<Lemma, Integer> map) {
-        return map.entrySet().stream()
-                .sorted(Comparator.comparingInt(Map.Entry::getValue))
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (a, b) -> {
-                            throw new AssertionError();
-                        },
-                        LinkedHashMap::new
-                ));
-    }
-
-    private Map<Lemma, Integer> getLemmaMap(LemmaRepository lemmaRepository, Set<String> lemmaSet) {
-        Map<Lemma, Integer> lemmaMap = new HashMap<>();
-        for (String lemma : lemmaSet) {
-            for (Site site : siteList) {
-                List<Lemma> lemmaList = lemmaRepository.getLemmas(lemma, site);
-                for (Lemma l : lemmaList) {
-                    lemmaMap.put(l, l.getFrequency());
-                }
-            }
-        }
-        siteList.clear();
-        return sorted(lemmaMap);
-    }
-
     public void addSites(SiteRepository siteRepository, SearchFormat searchFormat) {
         siteRepository.findAll().forEach(s -> {
             if (searchFormat.getSite() == null) {
@@ -78,7 +44,36 @@ public class RelevanceCalculator {
             }
         }
     }
-
+    private Map<Lemma, Integer> getLemmaMap(LemmaRepository lemmaRepository, Set<String> lemmaSet) {
+        Map<Lemma, Integer> lemmaMap = new HashMap<>();
+        for (String lemma : lemmaSet) {
+            for (Site site : siteList) {
+                List<Lemma> lemmaList = lemmaRepository.getLemmas(lemma, site);
+                for (Lemma l : lemmaList) {
+                    lemmaMap.put(l, l.getFrequency());
+                }
+            }
+        }
+        siteList.clear();
+        return sorted(lemmaMap);
+    }
+    private void calculateMaxRank(int rank) {
+        if (rank > maxRank) {
+            maxRank = rank;
+        }
+    }
+    private Map<Lemma, Integer> sorted(Map<Lemma, Integer> map) {
+        return map.entrySet().stream()
+                .sorted(Comparator.comparingInt(Map.Entry::getValue))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (a, b) -> {
+                            throw new AssertionError();
+                        },
+                        LinkedHashMap::new
+                ));
+    }
 }
 
 

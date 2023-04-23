@@ -11,13 +11,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ErrorsHandler {
     public static String textError;
+    public static Integer stopIndex;
     public static boolean returnError(SiteRepository siteRepository, List<Thread> thread){
-        AtomicInteger stop = new AtomicInteger();
+        stopIndex = 0;
         Set<String> sites = new HashSet<>();
         siteRepository.findAll().forEach(site -> {
             sites.add(site.getUrl());
             if(!site.getStatus().equals(Status.INDEXING)){
-                stop.getAndIncrement();
+                stopIndex++;
             }
         });
         if (sites.isEmpty()) {
@@ -34,7 +35,7 @@ public class ErrorsHandler {
             }
         }
 
-        if(stop.get() == sites.size()){
+        if(stopIndex == sites.size()){
             textError = "Все сайты проиндексированы или с ошибкой!" +
                     " Если только добавили сайт, то поробуйте запустить индаксацию позднее.";
             return true;

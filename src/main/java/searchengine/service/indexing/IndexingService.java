@@ -1,5 +1,7 @@
 package searchengine.service.indexing;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import searchengine.model.site.*;
@@ -7,16 +9,18 @@ import searchengine.service.task.indexing.SiteMapTask;
 
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Thread.sleep;
-
+@Getter
+@Setter
 public class IndexingService {
     private final SiteRepository siteRepository;
     private LemmaService lemmaService;
     private PageRepository pageRepository;
-    private String url;
-    private final Set<String> sites = new HashSet<>();
+    private Integer countStatusIndexing;
+    private List <Thread> threads;
+    private Set<String> setUrlInSite;
+    private Page page;
 
     public IndexingService(SiteRepository siteRepository, PageRepository pageRepository, LemmaService lemmaService) {
         this.lemmaService = lemmaService;
@@ -26,38 +30,68 @@ public class IndexingService {
     public IndexingService(SiteRepository siteRepository) {
         this.siteRepository = siteRepository;
     }
-
-    public synchronized void startIndexing(String nameURL) {
-        url = nameURL;
+    public void startIndexing() throws InterruptedException {
+        threads = new ArrayList<>();
         siteRepository.findAll().forEach(site -> {
-            try {
-                if (site.getUrl().equals(url) && site.getStatus().equals(Status.INDEXING)) {
-                    addPages(site);
-                    lemmaService.lemmaIndexing(site);
-                    site.setStatus(Status.INDEXED);
-                    site.setCreationTime(null);
-                    siteRepository.save(site);
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
+            if(site.getStatus().equals(Status.INDEXING)){
+                threads.add(new Thread(() -> {
+                    indexingSite(site);
+                }));
             }
         });
+        threads.forEach(Thread::start);
     }
-    private Set<String> getSiteMap() {
-        String name = new ForkJoinPool().invoke(new SiteMapTask(url));
-        Set<String> map = new TreeSet<>();
-        String[] token = name.split("\n");
-        for (String s : token) {
-            map.add(s.trim());
-        }
-        return map;
+    public boolean isIndexing() {
+        searchCountStatusIndexing();
+        return getCountStatusIndexing() > 0;
     }
 
-    private Page getPage(String urlSite, Site site) {
-        Page page = new Page();
+    public void stopIndexing(List<Thread> threads) {
+        siteRepository.findAll().forEach(site -> {
+            if (site.getStatus().equals(Status.INDEXING)) {
+                site.setStatus(Status.INDEXED);
+                site.setError("Индексация остановлена пользователем");
+                site.setCreationTime(null);
+                siteRepository.save(site);
+            }
+
+        });
+        threads.forEach(Thread::stop);
+    }
+    private synchronized void indexingSite(Site site) {
+        addPages(site);
+        lemmaService.startLemmaIndexing(site);
+        site.setStatus(Status.INDEXED);
+        site.setCreationTime(null);
+        siteRepository.save(site);
+
+    }
+    private void addPages(Site site) {
+        searchUrlsInSite(site.getUrl());
+        try {
+            for (String url : getSetUrlInSite()) {
+                fillingPage(url, site);
+                pageRepository.save(getPage());
+                sleep(150);
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    private void searchUrlsInSite(String url) {
+        String name = new ForkJoinPool().invoke(new SiteMapTask(url));
+        setUrlInSite = new TreeSet<>();
+        String[] token = name.split("\n");
+        for (String s : token) {
+            setUrlInSite.add(s.trim());
+        }
+    }
+
+    private void fillingPage(String urlSite, Site site) {
+        page = new Page();
         int ok = 200;
         int error = 404;
-        String uri = urlSite.substring(url.length() - 1);
+        String uri = urlSite.substring(site.getUrl().length() - 1);
         page.setCode(ok);
         page.setPath(uri);
         page.setSite(site);
@@ -67,51 +101,14 @@ public class IndexingService {
         } catch (Exception ex) {
             page.setCode(error);
         }
-        return page;
     }
 
-    private void addPages(Site site) {
-        try {
-            for (String url : getSiteMap()) {
-                pageRepository.save(getPage(url, site));
-                sleep(150);
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-    private Integer getCountStatusIndexing() {
-        AtomicInteger countStatusIndexing = new AtomicInteger();
+    private void searchCountStatusIndexing() {
+        countStatusIndexing = 0;
         siteRepository.findAll().forEach(site -> {
             if (site.getStatus().equals(Status.INDEXING)) {
-                site.setStatus(Status.INDEXED);
-                site.setError("Индексация остановлена пользователем");
-                site.setCreationTime(null);
-                siteRepository.save(site);
-                countStatusIndexing.getAndIncrement();
+                countStatusIndexing++;
             }
         });
-        return countStatusIndexing.get();
-    }
-    public boolean isIndexing(List<Thread> threads) {
-        if (getCountStatusIndexing() > 0) {
-            threads.forEach(Thread::stop);
-            return true;
-        }
-        return false;
-    }
-    public List<Thread> getThread() throws InterruptedException {
-        siteRepository.findAll().forEach(site -> {
-            sites.add(site.getUrl());
-        });
-        List <Thread> thread = new ArrayList<>();
-        for (String nameSite : sites) {
-            thread.add(new Thread(() -> {
-                startIndexing(nameSite);
-            }));
-        }
-        sleep(1000);
-        thread.forEach(Thread::start);
-        return thread;
     }
 }

@@ -35,7 +35,7 @@ public class ApiController {
     private final PageRepository pageRepository;
     private final LemmaRepository lemmaRepository;
     private final IndexRepository indexRepository;
-    private List<Thread> thread = new ArrayList<>();
+    private List<Thread> threads = new ArrayList<>();
 
     public ApiController(StatisticsService statisticsService, SearchService searchService,
                          SiteRepository siteRepository, PageRepository pageRepository,
@@ -51,23 +51,25 @@ public class ApiController {
     @PostMapping("/indexPage")
     public void addSite(Site site) {
         SiteService siteService = new SiteService(siteRepository,pageRepository);
-        siteService.addSite(site.getUrl(), thread);
+        siteService.addSite(site.getUrl(), threads);
     }
 
     @GetMapping("/startIndexing")
     public ResponseEntity<RequestResponse> startIndexing() throws Exception {
         LemmaService lemmaService = new LemmaService(pageRepository, lemmaRepository, indexRepository);
         IndexingService indexingService = new IndexingService(siteRepository, pageRepository, lemmaService);
-        if(ErrorsHandler.returnError(siteRepository, thread)){
+        if(ErrorsHandler.returnError(siteRepository, threads)){
             return ResponseEntity.ok(new RequestResponse(false, ErrorsHandler.textError));
         }
-        thread = indexingService.getThread();
+        indexingService.startIndexing();
+        threads = indexingService.getThreads();
         return ResponseEntity.ok(new RequestResponse(true, ""));
     }
     @GetMapping("/stopIndexing")
     public ResponseEntity<RequestResponse> stopIndexing() {
         IndexingService indexingService = new IndexingService(siteRepository);
-        if (indexingService.isIndexing(thread)) {
+        if (indexingService.isIndexing()) {
+            indexingService.stopIndexing(threads);
             return ResponseEntity.ok(new RequestResponse(true, ""));
         }
         return ResponseEntity.ok(new RequestResponse(false, "Индексация не запущена"));

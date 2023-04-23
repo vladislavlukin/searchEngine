@@ -23,6 +23,42 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SearchServiceImpl implements SearchService {
+    @Override
+    public SearchResponse getResponse(SearchFormat searchFormat, SiteRepository siteRepository, PageRepository pageRepository, LemmaRepository lemmaRepository, IndexRepository indexRepository) throws IOException {
+        Set<String> lemmaSet = new HashSet<>(LemmaFinder.getInstance().getLemmaSet(searchFormat.getQuery()));
+        List<SearchData> listData = new ArrayList<>();
+        RelevanceCalculator relevanceCalculator = new RelevanceCalculator();
+        SearchResponse response = new SearchResponse();
+        if (searchFormat.getQuery().isEmpty()) {
+            response.setResult(false);
+            response.setError("Задан пустой поисковый запрос");
+            return response;
+        }
+        relevanceCalculator.addSites(siteRepository,searchFormat);
+        relevanceCalculator.searchRelevance(lemmaSet, lemmaRepository, indexRepository);
+        Map<Page, Integer> relevanceMap = new HashMap<>(relevanceCalculator.getRelevanceMap());
+        int max = relevanceCalculator.getMaxRank();
+        if(max == 0){
+            return response;
+        }
+        float relevance;
+        Page page;
+        int stopIndex = 10;
+        int i = 0;
+        for (Map.Entry<Page, Integer> entry : sorted(relevanceMap).entrySet()) {
+            if(i++ == stopIndex){
+                break;
+            }
+            relevance = (float) entry.getValue() / max;
+            page = entry.getKey();
+            listData.add(getData(page, relevance, lemmaSet, searchFormat));
+        }
+        response.setResult(true);
+        response.setCount(listData.size());
+        response.setData(listData);
+        return response;
+
+    }
     private String getTitle(String url) throws Exception{
         Document doc = Jsoup.connect(url).get();
         Elements elements = doc.select("title");
@@ -61,42 +97,5 @@ public class SearchServiceImpl implements SearchService {
         data.setSnippet(snippet);
         data.setTitle(title);
         return data;
-    }
-
-    @Override
-    public SearchResponse getResponse(SearchFormat searchFormat, SiteRepository siteRepository, PageRepository pageRepository, LemmaRepository lemmaRepository, IndexRepository indexRepository) throws IOException {
-        Set<String> lemmaSet = new HashSet<>(LemmaFinder.getInstance().getLemmaSet(searchFormat.getQuery()));
-        List<SearchData> listData = new ArrayList<>();
-        RelevanceCalculator relevanceCalculator = new RelevanceCalculator();
-        SearchResponse response = new SearchResponse();
-        if (searchFormat.getQuery().isEmpty()) {
-            response.setResult(false);
-            response.setError("Задан пустой поисковый запрос");
-            return response;
-        }
-        relevanceCalculator.addSites(siteRepository,searchFormat);
-        relevanceCalculator.searchRelevance(lemmaSet, lemmaRepository, indexRepository);
-        Map<Page, Integer> relevanceMap = new HashMap<>(relevanceCalculator.getRelevanceMap());
-        int max = relevanceCalculator.getMaxRank();
-        if(max == 0){
-            return response;
-        }
-        float relevance;
-        Page page;
-        int stopIndex = 10;
-        int i = 0;
-        for (Map.Entry<Page, Integer> entry : sorted(relevanceMap).entrySet()) {
-            if(i++ == stopIndex){
-                break;
-            }
-            relevance = (float) entry.getValue() / max;
-            page = entry.getKey();
-            listData.add(getData(page, relevance, lemmaSet, searchFormat));
-        }
-        response.setResult(true);
-        response.setCount(listData.size());
-        response.setData(listData);
-        return response;
-
     }
 }
