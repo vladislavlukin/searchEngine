@@ -6,13 +6,13 @@ import org.jsoup.nodes.Document;
 import java.util.*;
 
 public class SnippetGenerator {
+    private final Set<String> lemma;
+    private final String textQuery;
+    private final Set<String> words = new HashSet<>();
     public SnippetGenerator(Set<String> lemma, String textQuery) {
         this.lemma = lemma;
         this.textQuery = textQuery;
     }
-    private final Set<String> lemma;
-    private final String textQuery;
-    private final Set<String> words = new HashSet<>();
     public String getSnippet(String text) {
         String resultSnippet = " ";
         String[] token = getReformatText(text).split(" ");

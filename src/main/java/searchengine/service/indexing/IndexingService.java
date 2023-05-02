@@ -20,7 +20,6 @@ public class IndexingService {
     private Integer countStatusIndexing;
     private List <Thread> threads;
     private Set<String> setUrlInSite;
-    private Page page;
 
     public IndexingService(SiteRepository siteRepository, PageRepository pageRepository, LemmaService lemmaService) {
         this.lemmaService = lemmaService;
@@ -30,7 +29,7 @@ public class IndexingService {
     public IndexingService(SiteRepository siteRepository) {
         this.siteRepository = siteRepository;
     }
-    public void startIndexing() throws InterruptedException {
+    public void startIndexing() {
         threads = new ArrayList<>();
         siteRepository.findAll().forEach(site -> {
             if(site.getStatus().equals(Status.INDEXING)){
@@ -70,8 +69,8 @@ public class IndexingService {
         searchUrlsInSite(site.getUrl());
         try {
             for (String url : getSetUrlInSite()) {
-                fillingPage(url, site);
-                pageRepository.save(getPage());
+                Page page = fillingPage(url, site);
+                pageRepository.save(page);
                 sleep(150);
             }
         } catch (InterruptedException e) {
@@ -87,8 +86,8 @@ public class IndexingService {
         }
     }
 
-    private void fillingPage(String urlSite, Site site) {
-        page = new Page();
+    private Page fillingPage(String urlSite, Site site) {
+        Page page = new Page();
         int ok = 200;
         int error = 404;
         String uri = urlSite.substring(site.getUrl().length() - 1);
@@ -101,6 +100,7 @@ public class IndexingService {
         } catch (Exception ex) {
             page.setCode(error);
         }
+        return page;
     }
 
     private void searchCountStatusIndexing() {

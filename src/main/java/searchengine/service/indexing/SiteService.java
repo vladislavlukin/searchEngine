@@ -1,6 +1,5 @@
 package searchengine.service.indexing;
 
-import lombok.Getter;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -12,12 +11,10 @@ import searchengine.model.site.Status;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-@Getter
 
 public class SiteService {
     private final SiteRepository siteRepository;
     private final PageRepository pageRepository;
-    private Site site;
     public SiteService(SiteRepository siteRepository, PageRepository pageRepository) {
         this.siteRepository = siteRepository;
         this.pageRepository = pageRepository;
@@ -32,13 +29,13 @@ public class SiteService {
             sites.remove(url);
         }
         if (!sites.contains(url) && threadIsNotLive(url, thread) ) {
-            fillingSite(url);
-            siteRepository.save(getSite());
+            Site site = fillingSite(url);
+            siteRepository.save(site);
             sites.add(url);
         }
     }
-    private void fillingSite(String url) {
-        site = new Site();
+    private Site fillingSite(String url) {
+        Site site = new Site();
         site.setUrl(url);
         site.setStatus(Status.INDEXING);
         site.setError("");
@@ -57,6 +54,7 @@ public class SiteService {
                 site.setName("No name");
             }
         }
+        return site;
     }
     private void deleteSite(String url){
         siteRepository.findAll().forEach(s -> {
@@ -77,15 +75,13 @@ public class SiteService {
             if (thread == null) {
                 return true;
             } else {
-                int i = 0;
+                int countThreadLive = 0;
                 for (Thread newThread : thread) {
                     if (newThread.isAlive()) {
-                        i++;
+                        countThreadLive++;
                     }
                 }
-                if (i == 0){
-                    return true;
-                }
+                return countThreadLive == 0;
             }
         }
         return false;
