@@ -16,41 +16,31 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.0.0</version>
+        <version>3.1.2</version>
         <relativePath/>
     </parent>
-    <repositories>
-        <repository>
-            <id>skillbox-gitlab</id>
-            <url>https://gitlab.skillbox.ru/api/v4/projects/263574/packages/maven</url>
-        </repository>
-    </repositories>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.lucene.morphology</groupId>
             <artifactId>morph</artifactId>
             <version>1.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene.analysis</groupId>
-            <artifactId>morphology</artifactId>
-            <version>1.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene.morphology</groupId>
-            <artifactId>dictionary-reader</artifactId>
-            <version>1.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene.morphology</groupId>
-            <artifactId>english</artifactId>
-            <version>1.5</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/morph-1.5.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene.morphology</groupId>
             <artifactId>russian</artifactId>
             <version>1.5</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/russian-1.5.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene.morphology</groupId>
+            <artifactId>english</artifactId>
+            <version>1.5</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/english-1.5.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -86,7 +76,51 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.11</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
-
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.1.2</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>3.1.2</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                            <mainClass>searchengine.Application</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

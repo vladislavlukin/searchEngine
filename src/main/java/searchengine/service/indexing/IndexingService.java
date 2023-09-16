@@ -5,7 +5,7 @@ import lombok.Setter;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import searchengine.model.site.*;
-import searchengine.service.task.indexing.SiteMapTask;
+import searchengine.service.task.indexing.indexing.SiteMapTask;
 
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;

@@ -9,12 +9,11 @@ import searchengine.dto.search.SearchData;
 import searchengine.dto.search.SearchFormat;
 import searchengine.dto.search.SearchResponse;
 import searchengine.model.lemma.IndexRepository;
-import searchengine.model.lemma.Lemma;
 import searchengine.model.lemma.LemmaRepository;
 import searchengine.model.site.*;
-import searchengine.service.task.indexing.LemmaFinder;
-import searchengine.service.task.search.RelevanceCalculator;
-import searchengine.service.task.search.SnippetGenerator;
+import searchengine.service.task.indexing.indexing.LemmaFinder;
+import searchengine.service.task.indexing.search.RelevanceCalculator;
+import searchengine.service.task.indexing.search.SnippetGenerator;
 
 import java.io.IOException;
 import java.util.*;

@@ -7,7 +7,7 @@ import searchengine.model.lemma.LemmaRepository;
 import searchengine.model.site.Page;
 import searchengine.model.site.PageRepository;
 import searchengine.model.site.Site;
-import searchengine.service.task.indexing.LemmaFinder;
+import searchengine.service.task.indexing.indexing.LemmaFinder;
 
 import java.util.*;
 public class LemmaService {

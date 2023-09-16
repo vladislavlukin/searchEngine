@@ -1,4 +1,4 @@
-package searchengine.controller;
+package searchengine.controllers;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,7 +19,7 @@ import searchengine.service.indexing.LemmaService;
 import searchengine.service.indexing.SiteService;
 import searchengine.service.search.SearchService;
 import searchengine.service.statistic.StatisticsService;
-import searchengine.service.task.indexing.ErrorsHandler;
+import searchengine.service.task.indexing.indexing.ErrorsHandler;
 
 import java.io.IOException;
 import java.util.*;

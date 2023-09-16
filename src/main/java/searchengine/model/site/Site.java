@@ -3,8 +3,7 @@ package searchengine.model.site;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.CurrentTimestamp;
-import org.hibernate.tuple.GenerationTiming;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 @Getter
@@ -16,7 +15,7 @@ public class Site {
     private int id;
     @Enumerated(EnumType.STRING)
     private Status status;
-    @CurrentTimestamp(timing = GenerationTiming.ALWAYS)
+    @CreationTimestamp
     private LocalDateTime creationTime;
     private String error;
     private String url;

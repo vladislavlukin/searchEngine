@@ -1,4 +1,4 @@
-package searchengine.service.task.indexing;
+package searchengine.service.task.indexing.indexing;
 
 
 import searchengine.model.site.SiteRepository;

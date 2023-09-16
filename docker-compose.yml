@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  mysql:
+    container_name: mysql
+    image: mysql:latest
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${mysql_password}
+      MYSQL_DATABASE: ${mysql_db}
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    ports:
+      - "${mysql_port}:${mysql_port}"
+    networks:
+      - s_engine
+
+
+volumes:
+  data:
+    driver: local
+
+networks:
+  s_engine:
+    driver: bridge
+
