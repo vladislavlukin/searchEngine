@@ -1,8 +1,7 @@
-package searchengine.model.lemma;
+package searchengine.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import searchengine.model.site.Page;
 
 @Getter
 @Setter

@@ -1,4 +1,4 @@
-package searchengine.model.site;
+package searchengine.dto.indexing;
 
 public enum Status {
     INDEXING,

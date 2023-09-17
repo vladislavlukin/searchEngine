@@ -1,34 +1,35 @@
 package searchengine.service.indexing;
 
+import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-import searchengine.model.site.PageRepository;
-import searchengine.model.site.Site;
-import searchengine.model.site.SiteRepository;
-import searchengine.model.site.Status;
+import org.springframework.stereotype.Service;
+import searchengine.repositories.PageRepository;
+import searchengine.model.Site;
+import searchengine.repositories.SiteRepository;
+import searchengine.dto.indexing.Status;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
+@Service
+@RequiredArgsConstructor
 public class SiteService {
     private final SiteRepository siteRepository;
     private final PageRepository pageRepository;
-    public SiteService(SiteRepository siteRepository, PageRepository pageRepository) {
-        this.siteRepository = siteRepository;
-        this.pageRepository = pageRepository;
-    }
-    public void addSite(String url, List<Thread> thread){
+    private final ThreadManager threadManager;
+    public void addSite(String url){
         Set<String> sites = new HashSet<>();
         siteRepository.findAll().forEach(site -> {
             sites.add(site.getUrl());
         });
-        if (sites.contains(url) && threadIsNotLive(url, thread)) {
+        if (sites.contains(url) && threadIsNotLive(url, threadManager.getThreads())) {
             deleteSite(url);
             sites.remove(url);
         }
-        if (!sites.contains(url) && threadIsNotLive(url, thread) ) {
+        if (!sites.contains(url) && threadIsNotLive(url, threadManager.getThreads()) ) {
             Site site = fillingSite(url);
             siteRepository.save(site);
             sites.add(url);
@@ -38,6 +39,7 @@ public class SiteService {
         Site site = new Site();
         site.setUrl(url);
         site.setStatus(Status.INDEXING);
+        site.setCreationTime(LocalDateTime.now());
         site.setError("");
         try {
             Document doc = Jsoup.connect(url).get();

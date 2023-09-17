@@ -1,10 +1,10 @@
 package searchengine.service.statistic;
 
 import searchengine.dto.statistic.StatisticsResponse;
-import searchengine.model.lemma.LemmaRepository;
-import searchengine.model.site.PageRepository;
-import searchengine.model.site.SiteRepository;
+import searchengine.repositories.LemmaRepository;
+import searchengine.repositories.PageRepository;
+import searchengine.repositories.SiteRepository;
 
 public interface StatisticsService {
-    StatisticsResponse getStatistics(SiteRepository siteRepository, PageRepository pageRepository, LemmaRepository lemmaRepository);
+    StatisticsResponse getStatistics();
 }

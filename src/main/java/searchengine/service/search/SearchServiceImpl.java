@@ -8,9 +8,11 @@ import org.springframework.stereotype.Service;
 import searchengine.dto.search.SearchData;
 import searchengine.dto.search.SearchFormat;
 import searchengine.dto.search.SearchResponse;
-import searchengine.model.lemma.IndexRepository;
-import searchengine.model.lemma.LemmaRepository;
-import searchengine.model.site.*;
+import searchengine.model.Page;
+import searchengine.repositories.IndexRepository;
+import searchengine.repositories.LemmaRepository;
+import searchengine.repositories.PageRepository;
+import searchengine.repositories.SiteRepository;
 import searchengine.service.task.indexing.indexing.LemmaFinder;
 import searchengine.service.task.indexing.search.RelevanceCalculator;
 import searchengine.service.task.indexing.search.SnippetGenerator;
@@ -22,8 +24,11 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SearchServiceImpl implements SearchService {
+    private final SiteRepository siteRepository;
+    private final LemmaRepository lemmaRepository;
+    private final IndexRepository indexRepository;
     @Override
-    public SearchResponse getResponse(SearchFormat searchFormat, SiteRepository siteRepository, PageRepository pageRepository, LemmaRepository lemmaRepository, IndexRepository indexRepository) throws IOException {
+    public SearchResponse getResponse(SearchFormat searchFormat) throws IOException {
         Set<String> lemmaSet = new HashSet<>(LemmaFinder.getInstance().getLemmaSet(searchFormat.getQuery()));
         List<SearchData> listData = new ArrayList<>();
         RelevanceCalculator relevanceCalculator = new RelevanceCalculator();

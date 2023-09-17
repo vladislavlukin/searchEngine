@@ -1,4 +1,4 @@
-package searchengine.model.lemma;
+package searchengine.repositories;
 
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -6,15 +6,15 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import searchengine.model.Lemma;
+import searchengine.model.Site;
 
 import java.util.List;
 
 @Repository
-public interface IndexRepository extends CrudRepository<Identifier, Integer> {
+public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
     @Transactional(readOnly = true)
     @Modifying
-    @Query("select i from Identifier i where i.lemma=:lemma")
-    List<Identifier> getIndexes (@Param("lemma") Lemma lemma);
+    @Query("select l from Lemma l where l.lemma=:lemma and l.site=:site")
+    List<Lemma> getLemmas (@Param("lemma") String lemma, @Param("site") Site site);
 }
-
-

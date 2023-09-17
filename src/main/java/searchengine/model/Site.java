@@ -1,9 +1,10 @@
-package searchengine.model.site;
+package searchengine.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import searchengine.dto.indexing.Status;
 
 import java.time.LocalDateTime;
 @Getter
@@ -15,7 +16,6 @@ public class Site {
     private int id;
     @Enumerated(EnumType.STRING)
     private Status status;
-    @CreationTimestamp
     private LocalDateTime creationTime;
     private String error;
     private String url;

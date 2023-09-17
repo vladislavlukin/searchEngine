@@ -6,9 +6,9 @@ import searchengine.dto.statistic.DetailedStatisticsItem;
 import searchengine.dto.statistic.StatisticsData;
 import searchengine.dto.statistic.StatisticsResponse;
 import searchengine.dto.statistic.TotalStatistics;
-import searchengine.model.lemma.LemmaRepository;
-import searchengine.model.site.PageRepository;
-import searchengine.model.site.SiteRepository;
+import searchengine.repositories.LemmaRepository;
+import searchengine.repositories.PageRepository;
+import searchengine.repositories.SiteRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,8 +17,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 @RequiredArgsConstructor
 public class StatisticsServiceImpl implements StatisticsService {
+    private final SiteRepository siteRepository;
+    private final PageRepository pageRepository;
+    private final LemmaRepository lemmaRepository;
     @Override
-    public StatisticsResponse getStatistics(SiteRepository siteRepository, PageRepository pageRepository, LemmaRepository lemmaRepository) {
+    public StatisticsResponse getStatistics() {
 
         TotalStatistics total = new TotalStatistics();
         total.setSites(siteRepository.count());

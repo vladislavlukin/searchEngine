@@ -1,67 +1,73 @@
 package searchengine.service.indexing;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import searchengine.model.site.*;
+import org.springframework.stereotype.Service;
+import searchengine.dto.indexing.Status;
+import searchengine.model.Page;
+import searchengine.model.Site;
+import searchengine.repositories.PageRepository;
+import searchengine.repositories.SiteRepository;
 import searchengine.service.task.indexing.indexing.SiteMapTask;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 
 import static java.lang.Thread.sleep;
 @Getter
 @Setter
+@RequiredArgsConstructor
+@Service
 public class IndexingService {
     private final SiteRepository siteRepository;
-    private LemmaService lemmaService;
-    private PageRepository pageRepository;
+    private final LemmaService lemmaService;
+    private final PageRepository pageRepository;
+    private final ThreadManager threadManager;
     private Integer countStatusIndexing;
-    private List <Thread> threads;
     private Set<String> setUrlInSite;
 
-    public IndexingService(SiteRepository siteRepository, PageRepository pageRepository, LemmaService lemmaService) {
-        this.lemmaService = lemmaService;
-        this.siteRepository = siteRepository;
-        this.pageRepository = pageRepository;
-    }
-    public IndexingService(SiteRepository siteRepository) {
-        this.siteRepository = siteRepository;
-    }
     public void startIndexing() {
-        threads = new ArrayList<>();
+        if(!siteRepository.isIndexingStatus()) {
+            throw new IllegalArgumentException("Добавтье не менее одного сайта или обновите текущий");
+        }
+        if(threadManager.getThreads() != null && threadManager.getThreads().stream().anyMatch(Thread::isAlive)){
+            throw new IllegalArgumentException("Индексация уже запущена");
+        }
         siteRepository.findAll().forEach(site -> {
-            if(site.getStatus().equals(Status.INDEXING)){
-                threads.add(new Thread(() -> {
+            if (site.getStatus().equals(Status.INDEXING)) {
+                Thread thread = new Thread(() -> {
                     indexingSite(site);
-                }));
+                });
+                threadManager.addThread(thread);
             }
         });
-        threads.forEach(Thread::start);
-    }
-    public boolean isIndexing() {
-        searchCountStatusIndexing();
-        return getCountStatusIndexing() > 0;
+        threadManager.startAllThreads();
     }
 
-    public void stopIndexing(List<Thread> threads) {
+    public void stopIndexing() {
+        if(siteRepository.isIndexingStatus()){
+            throw new IllegalArgumentException("Индексация не запущена");
+        }
         siteRepository.findAll().forEach(site -> {
             if (site.getStatus().equals(Status.INDEXING)) {
                 site.setStatus(Status.INDEXED);
                 site.setError("Индексация остановлена пользователем");
-                site.setCreationTime(null);
+                site.setCreationTime(LocalDateTime.now());
                 siteRepository.save(site);
             }
 
         });
-        threads.forEach(Thread::stop);
+        threadManager.stopAllThreads();
     }
     private synchronized void indexingSite(Site site) {
         addPages(site);
         lemmaService.startLemmaIndexing(site);
         site.setStatus(Status.INDEXED);
-        site.setCreationTime(null);
+        site.setCreationTime(LocalDateTime.now());
         siteRepository.save(site);
 
     }
@@ -101,14 +107,5 @@ public class IndexingService {
             page.setCode(error);
         }
         return page;
-    }
-
-    private void searchCountStatusIndexing() {
-        countStatusIndexing = 0;
-        siteRepository.findAll().forEach(site -> {
-            if (site.getStatus().equals(Status.INDEXING)) {
-                countStatusIndexing++;
-            }
-        });
     }
 }

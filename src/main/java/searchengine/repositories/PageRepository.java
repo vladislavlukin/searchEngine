@@ -1,4 +1,5 @@
-package searchengine.model.site;
+package searchengine.repositories;
+
 
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -6,17 +7,12 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
+import searchengine.model.Page;
 
 @Repository
-public interface SiteRepository extends CrudRepository<Site, Integer> {
+public interface PageRepository extends CrudRepository<Page, Integer> {
     @Transactional
     @Modifying
-    @Query("delete from Page p where p.site=:site")
-    void deletePageBySite(@Param("site") Site site);
-    @Transactional
-    @Modifying
-    @Query("delete from Lemma l where l.site=:site")
-    void deleteLemmaBySite(@Param("site") Site site);
+    @Query("delete from Identifier i where i.page=:page")
+    void deleteIndexByPage(@Param("page") Page page);
 }

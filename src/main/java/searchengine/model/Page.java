@@ -1,8 +1,9 @@
-package searchengine.model.site;
+package searchengine.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
 @Getter
 @Setter
 @Entity

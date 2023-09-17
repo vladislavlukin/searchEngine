@@ -2,13 +2,13 @@ package searchengine.service.task.indexing.search;
 
 import lombok.Getter;
 import searchengine.dto.search.SearchFormat;
-import searchengine.model.lemma.Identifier;
-import searchengine.model.lemma.IndexRepository;
-import searchengine.model.lemma.Lemma;
-import searchengine.model.lemma.LemmaRepository;
-import searchengine.model.site.Page;
-import searchengine.model.site.Site;
-import searchengine.model.site.SiteRepository;
+import searchengine.model.Identifier;
+import searchengine.repositories.IndexRepository;
+import searchengine.model.Lemma;
+import searchengine.repositories.LemmaRepository;
+import searchengine.model.Page;
+import searchengine.model.Site;
+import searchengine.repositories.SiteRepository;
 
 import java.util.*;
 import java.util.stream.Collectors;

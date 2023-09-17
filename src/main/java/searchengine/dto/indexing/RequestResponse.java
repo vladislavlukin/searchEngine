@@ -12,5 +12,8 @@ public class RequestResponse {
         this.result = result;
         this.error = error;
     }
+    public RequestResponse(boolean result) {
+        this.result = result;
+    }
 
 }

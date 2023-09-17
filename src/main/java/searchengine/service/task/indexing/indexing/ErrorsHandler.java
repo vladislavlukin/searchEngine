@@ -1,18 +1,15 @@
 package searchengine.service.task.indexing.indexing;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
-import searchengine.model.site.SiteRepository;
-import searchengine.model.site.Status;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
+@RequiredArgsConstructor
+@Component
 public class ErrorsHandler {
-    public static String textError;
-    public static Integer stopIndex;
-    public static boolean returnError(SiteRepository siteRepository, List<Thread> thread){
+    /*private final ThreadManager threadManager;
+    public String textError;
+    public Integer stopIndex;
+    public boolean returnError(SiteRepository siteRepository){
         stopIndex = 0;
         Set<String> sites = new HashSet<>();
         siteRepository.findAll().forEach(site -> {
@@ -26,8 +23,8 @@ public class ErrorsHandler {
             return true;
         }
 
-        if (thread != null) {
-            for (Thread newThread : thread) {
+        if (threadManager.getThreads() != null) {
+            for (Thread newThread : threadManager.getThreads()) {
                 if (newThread.isAlive()) {
                     textError = "Индексикация уже запущена";
                     return true;
@@ -42,4 +39,6 @@ public class ErrorsHandler {
         }
         return false;
     }
+
+     */
 }
