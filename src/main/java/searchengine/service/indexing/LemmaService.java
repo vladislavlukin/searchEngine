@@ -2,7 +2,7 @@ package searchengine.service.indexing;
 
 import org.springframework.stereotype.Component;
 import searchengine.model.Identifier;
-import searchengine.repositories.IndexRepository;
+import searchengine.repositories.IdentifierRepository;
 import searchengine.model.Lemma;
 import searchengine.repositories.LemmaRepository;
 import searchengine.model.Page;
@@ -15,14 +15,14 @@ import java.util.*;
 public class LemmaService {
     private final PageRepository pageRepository;
     private final LemmaRepository lemmaRepository;
-    private final IndexRepository indexRepository;
+    private final IdentifierRepository identifierRepository;
     private final Map<String, Map<Page, Integer>> lemmaOfPagesMap = new HashMap<>();
     private final Map<String, Integer> lemmaMap = new HashMap<>();
 
-    public LemmaService(PageRepository pageRepository, LemmaRepository lemmaRepository, IndexRepository indexRepository) {
+    public LemmaService(PageRepository pageRepository, LemmaRepository lemmaRepository, IdentifierRepository identifierRepository) {
         this.pageRepository = pageRepository;
         this.lemmaRepository = lemmaRepository;
-        this.indexRepository = indexRepository;
+        this.identifierRepository = identifierRepository;
     }
     public void startLemmaIndexing(Site site) {
         pageRepository.findAll().forEach(page -> {
@@ -89,7 +89,7 @@ public class LemmaService {
                     Page page = result.getKey();
                     int countLemma = result.getValue();
                     Identifier index = fillingIndex(page, lemma, countLemma);
-                    indexRepository.save(index);
+                    identifierRepository.save(index);
                 }
             }
         });

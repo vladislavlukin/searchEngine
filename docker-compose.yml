@@ -8,13 +8,46 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${mysql_password}
       MYSQL_DATABASE: ${mysql_db}
-      MYSQL_CHARSET: utf8mb4
-      MYSQL_COLLATION: utf8mb4_unicode_ci
+      MYSQL_CHARSET: ${mysql_charset}
+      MYSQL_COLLATION: ${mysql_collation}
+      MYSQL_OPTS: ${mysql_opts}
     ports:
       - "${mysql_port}:${mysql_port}"
     networks:
       - s_engine
 
+  mysql_test:
+    container_name: mysql_test
+    image: mysql:latest
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${mysql_password_test}
+      MYSQL_DATABASE: ${mysql_db_test}
+      MYSQL_CHARSET: ${mysql_charset}
+      MYSQL_COLLATION: ${mysql_collation}
+    ports:
+      - "${mysql_port_test}:${mysql_port}"
+    networks:
+      - s_engine
+
+
+  search_engine:
+    container_name: search_engine
+    image: search_engine:1.0
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    environment:
+      MYSQL_USER: ${mysql_user}
+      MYSQL_PASSWORD: ${mysql_password}
+      MYSQL_DATABASE: ${mysql_db}
+      MYSQL_HOST: ${mysql_host}
+      MYSQL_PORT: ${mysql_port}
+    ports:
+    - "8080:8080"
+
+    networks:
+      - s_engine
 
 volumes:
   data:

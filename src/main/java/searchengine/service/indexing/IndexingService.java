@@ -34,7 +34,7 @@ public class IndexingService {
         if(!siteRepository.isIndexingStatus()) {
             throw new IllegalArgumentException("Добавтье не менее одного сайта или обновите текущий");
         }
-        if(threadManager.getThreads() != null && threadManager.getThreads().stream().anyMatch(Thread::isAlive)){
+        if(threadManager.areThreadsAlive()){
             throw new IllegalArgumentException("Индексация уже запущена");
         }
         siteRepository.findAll().forEach(site -> {
@@ -49,7 +49,7 @@ public class IndexingService {
     }
 
     public void stopIndexing() {
-        if(siteRepository.isIndexingStatus()){
+        if(threadManager.areThreadsNotAlive()){
             throw new IllegalArgumentException("Индексация не запущена");
         }
         siteRepository.findAll().forEach(site -> {

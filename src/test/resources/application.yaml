@@ -1,11 +1,10 @@
-server:
-  port: 8080
 
 spring:
   datasource:
-    username:
-    password:
-    url:
+    url: jdbc:mysql://localhost:3307/search_engine_test?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+
   jpa:
     properties:
       hibernate:

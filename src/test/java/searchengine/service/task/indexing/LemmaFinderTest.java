@@ -1,4 +1,4 @@
-package searchengine;
+package searchengine.service.task.indexing;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,6 @@ public class LemmaFinderTest {
         String html = "<html><body>красивейший красивая краснее краски</body></html>";
         Map<String, Integer> lemmas = lemmaFinder.collectLemmas(html);
 
-        System.out.println(lemmas);
         assertEquals(lemmas.get("красивый"), 2);
         assertEquals(lemmas.get("красный"), 1);
         assertEquals(lemmas.get("краска"), 1);

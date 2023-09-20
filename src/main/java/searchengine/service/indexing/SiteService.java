@@ -5,87 +5,74 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
-import searchengine.repositories.PageRepository;
+import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.Site;
+import searchengine.repositories.IdentifierRepository;
+import searchengine.repositories.LemmaRepository;
+import searchengine.repositories.PageRepository;
 import searchengine.repositories.SiteRepository;
 import searchengine.dto.indexing.Status;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 public class SiteService {
     private final SiteRepository siteRepository;
     private final PageRepository pageRepository;
+    private final LemmaRepository lemmaRepository;
+    private final IdentifierRepository identifierRepository;
     private final ThreadManager threadManager;
-    public void addSite(String url){
-        Set<String> sites = new HashSet<>();
-        siteRepository.findAll().forEach(site -> {
-            sites.add(site.getUrl());
-        });
-        if (sites.contains(url) && threadIsNotLive(url, threadManager.getThreads())) {
+
+    public void addSite(String url) {
+        if (siteRepository.existsByURL(url) && threadManager.areThreadsNotAlive()) {
             deleteSite(url);
-            sites.remove(url);
         }
-        if (!sites.contains(url) && threadIsNotLive(url, threadManager.getThreads()) ) {
-            Site site = fillingSite(url);
-            siteRepository.save(site);
-            sites.add(url);
+        if (!siteRepository.existsByURL(url) && isValidURL(url)) {
+            siteRepository.save(fillingSite(url));
         }
     }
     private Site fillingSite(String url) {
-        Site site = new Site();
-        site.setUrl(url);
-        site.setStatus(Status.INDEXING);
-        site.setCreationTime(LocalDateTime.now());
-        site.setError("");
+        Status status;
+        String error;
+        String name;
         try {
             Document doc = Jsoup.connect(url).get();
             Elements elements = doc.select("title");
-            site.setName(elements.text());
+            error = "";
+            status = Status.INDEXING;
+            name = elements.text();
         } catch (Exception ex) {
-            if(ex.getClass().getSimpleName().equals("UnknownHostException")){
-                site.setStatus(Status.FAILED);
-                site.setError("Сайт не существует");
-                site.setName("No name");
-            }else {
-                site.setStatus(Status.FAILED);
-                site.setError("Ошибка индексации: главная страница сайта недоступна");
-                site.setName("No name");
-            }
+            error = ex.getMessage();
+            status = Status.FAILED;
+            name = "Failed site";
         }
-        return site;
+        return Site.builder()
+                .creationTime(LocalDateTime.now())
+                .name(name)
+                .error(error)
+                .status(status)
+                .url(url)
+                .build();
     }
-    private void deleteSite(String url){
-        siteRepository.findAll().forEach(s -> {
-            if(s.getUrl().equals(url)) {
-                pageRepository.findAll().forEach(p -> {
-                    if(p.getSite().equals(s)){
-                        pageRepository.deleteIndexByPage(p);
-                    }
-                });
-                siteRepository.deleteLemmaBySite(s);
-                siteRepository.deletePageBySite(s);
-                siteRepository.delete(s);
-            }
-        });
-    }
-    private boolean threadIsNotLive(String url, List<Thread> thread){
-        if (!url.isEmpty()) {
-            if (thread == null) {
-                return true;
-            } else {
-                int countThreadLive = 0;
-                for (Thread newThread : thread) {
-                    if (newThread.isAlive()) {
-                        countThreadLive++;
-                    }
-                }
-                return countThreadLive == 0;
-            }
+
+    private boolean isValidURL(String urlString) {
+        try {
+            new URL(urlString);
+            return true;
+        } catch (MalformedURLException e) {
+            return false;
         }
-        return false;
+    }
+
+    @Transactional
+    private void deleteSite(String url) {
+        Site site = siteRepository.findByUrl(url);
+        identifierRepository.deleteIndexBySite(site);
+        lemmaRepository.deleteLemmaBySite(site);
+        pageRepository.deletePageBySite(site);
+        siteRepository.delete(site);
     }
 }

@@ -3,7 +3,7 @@ package searchengine.service.task.indexing.search;
 import lombok.Getter;
 import searchengine.dto.search.SearchFormat;
 import searchengine.model.Identifier;
-import searchengine.repositories.IndexRepository;
+import searchengine.repositories.IdentifierRepository;
 import searchengine.model.Lemma;
 import searchengine.repositories.LemmaRepository;
 import searchengine.model.Page;
@@ -28,10 +28,10 @@ public class RelevanceCalculator {
         });
     }
 
-    public void searchRelevance(Set<String> lemmaSet, LemmaRepository lemmaRepository, IndexRepository indexRepository) {
+    public void searchRelevance(Set<String> lemmaSet, LemmaRepository lemmaRepository, IdentifierRepository identifierRepository) {
         for (Map.Entry<Lemma, Integer> entry : sorted(getLemmaMap(lemmaRepository, lemmaSet)).entrySet()) {
             Lemma lemma = entry.getKey();
-            List<Identifier> indexList = indexRepository.getIndexes(lemma);
+            List<Identifier> indexList = identifierRepository.getIndexes(lemma);
             for (Identifier identifier : indexList) {
                 int rank;
                 if (relevanceMap.containsKey(identifier.getPage())) {

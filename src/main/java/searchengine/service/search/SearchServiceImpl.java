@@ -9,9 +9,8 @@ import searchengine.dto.search.SearchData;
 import searchengine.dto.search.SearchFormat;
 import searchengine.dto.search.SearchResponse;
 import searchengine.model.Page;
-import searchengine.repositories.IndexRepository;
+import searchengine.repositories.IdentifierRepository;
 import searchengine.repositories.LemmaRepository;
-import searchengine.repositories.PageRepository;
 import searchengine.repositories.SiteRepository;
 import searchengine.service.task.indexing.indexing.LemmaFinder;
 import searchengine.service.task.indexing.search.RelevanceCalculator;
@@ -26,7 +25,7 @@ import java.util.stream.Collectors;
 public class SearchServiceImpl implements SearchService {
     private final SiteRepository siteRepository;
     private final LemmaRepository lemmaRepository;
-    private final IndexRepository indexRepository;
+    private final IdentifierRepository identifierRepository;
     @Override
     public SearchResponse getResponse(SearchFormat searchFormat) throws IOException {
         Set<String> lemmaSet = new HashSet<>(LemmaFinder.getInstance().getLemmaSet(searchFormat.getQuery()));
@@ -39,7 +38,7 @@ public class SearchServiceImpl implements SearchService {
             return response;
         }
         relevanceCalculator.addSites(siteRepository,searchFormat);
-        relevanceCalculator.searchRelevance(lemmaSet, lemmaRepository, indexRepository);
+        relevanceCalculator.searchRelevance(lemmaSet, lemmaRepository, identifierRepository);
         Map<Page, Integer> relevanceMap = new HashMap<>(relevanceCalculator.getRelevanceMap());
         int max = relevanceCalculator.getMaxRank();
         if(max == 0){

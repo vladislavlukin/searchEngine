@@ -8,11 +8,12 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.Page;
+import searchengine.model.Site;
 
 @Repository
 public interface PageRepository extends CrudRepository<Page, Integer> {
-    @Transactional
-    @Modifying
-    @Query("delete from Identifier i where i.page=:page")
-    void deleteIndexByPage(@Param("page") Page page);
+   @Transactional
+   @Modifying
+   @Query("delete from Page p where p.site=:site")
+   void deletePageBySite(@Param("site") Site site);
 }

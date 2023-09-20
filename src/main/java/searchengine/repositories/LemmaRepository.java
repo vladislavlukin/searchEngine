@@ -13,8 +13,11 @@ import java.util.List;
 
 @Repository
 public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
-    @Transactional(readOnly = true)
-    @Modifying
     @Query("select l from Lemma l where l.lemma=:lemma and l.site=:site")
     List<Lemma> getLemmas (@Param("lemma") String lemma, @Param("site") Site site);
+
+    @Transactional
+    @Modifying
+    @Query("delete from Lemma l where l.site=:site")
+    void deleteLemmaBySite(@Param("site") Site site);
 }

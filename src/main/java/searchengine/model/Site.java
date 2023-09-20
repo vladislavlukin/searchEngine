@@ -1,14 +1,15 @@
 package searchengine.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.*;
 import searchengine.dto.indexing.Status;
 
 import java.time.LocalDateTime;
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @Entity
 public class Site {
     @Id
