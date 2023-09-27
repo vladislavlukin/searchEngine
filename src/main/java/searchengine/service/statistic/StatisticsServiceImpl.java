@@ -12,7 +12,6 @@ import searchengine.repositories.SiteRepository;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @RequiredArgsConstructor
@@ -37,20 +36,8 @@ public class StatisticsServiceImpl implements StatisticsService {
             item.setUrl(site.getUrl());
             item.setStatus(site.getStatus().toString());
             item.setStatusTime(site.getCreationTime());
-            AtomicInteger p = new AtomicInteger();
-            pageRepository.findAll().forEach(page -> {
-                if (page.getSite().equals(site)) {
-                    p.getAndIncrement();
-                }
-            });
-            item.setPages(p.get());
-            AtomicInteger l = new AtomicInteger();
-            lemmaRepository.findAll().forEach(lemma -> {
-                if (lemma.getSite().equals(site)) {
-                    l.getAndIncrement();
-                }
-            });
-            item.setLemmas(l.get());
+            item.setPages(pageRepository.countBySite(site));
+            item.setLemmas(lemmaRepository.countBySite(site));
             detailed.add(item);
 
         });

@@ -12,9 +12,9 @@ import searchengine.model.Page;
 import searchengine.repositories.IdentifierRepository;
 import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.SiteRepository;
-import searchengine.service.task.indexing.indexing.LemmaFinder;
-import searchengine.service.task.indexing.search.RelevanceCalculator;
-import searchengine.service.task.indexing.search.SnippetGenerator;
+import searchengine.service.task.indexing.LemmaFinder;
+import searchengine.service.task.search.RelevanceCalculator;
+import searchengine.service.task.search.SnippetGenerator;
 
 import java.io.IOException;
 import java.util.*;
@@ -28,7 +28,7 @@ public class SearchServiceImpl implements SearchService {
     private final IdentifierRepository identifierRepository;
     @Override
     public SearchResponse getResponse(SearchFormat searchFormat) throws IOException {
-        Set<String> lemmaSet = new HashSet<>(LemmaFinder.getInstance().getLemmaSet(searchFormat.getQuery()));
+        Set<String> lemmaSet = new HashSet<>(LemmaFinder.getInstanceRu().getLemmas(searchFormat.getQuery()));
         List<SearchData> listData = new ArrayList<>();
         RelevanceCalculator relevanceCalculator = new RelevanceCalculator();
         SearchResponse response = new SearchResponse();

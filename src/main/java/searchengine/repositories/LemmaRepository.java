@@ -16,6 +16,9 @@ public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
     @Query("select l from Lemma l where l.lemma=:lemma and l.site=:site")
     List<Lemma> getLemmas (@Param("lemma") String lemma, @Param("site") Site site);
 
+    @Query("select count(p) from Lemma p where p.site=:site")
+    int countBySite(@Param("site") Site site);
+
     @Transactional
     @Modifying
     @Query("delete from Lemma l where l.site=:site")

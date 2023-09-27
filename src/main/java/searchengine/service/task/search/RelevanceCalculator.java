@@ -1,4 +1,4 @@
-package searchengine.service.task.indexing.search;
+package searchengine.service.task.search;
 
 import lombok.Getter;
 import searchengine.dto.search.SearchFormat;

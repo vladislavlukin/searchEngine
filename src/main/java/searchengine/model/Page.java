@@ -9,6 +9,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@Table(indexes = {@Index(columnList = "path"), @Index(columnList = "site_id")})
 public class Page {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,6 +1,7 @@
-package searchengine.service.task.indexing.indexing;
+package searchengine.service.task.indexing;
 
 import org.apache.lucene.morphology.LuceneMorphology;
+import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -13,8 +14,12 @@ public class LemmaFinder {
     private static final String WORD_TYPE_REGEX = "\\W\\w&&[^а-яА-Я\\s]";
     private static final String[] particlesNames = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ"};
 
-    public static LemmaFinder getInstance() throws IOException {
+    public static LemmaFinder getInstanceRu() throws IOException {
         LuceneMorphology morphology = new RussianLuceneMorphology();
+        return new LemmaFinder(morphology);
+    }
+    public static LemmaFinder getInstanceEn() throws IOException {
+        LuceneMorphology morphology = new EnglishLuceneMorphology();
         return new LemmaFinder(morphology);
     }
 
@@ -22,46 +27,11 @@ public class LemmaFinder {
         this.luceneMorphology = luceneMorphology;
     }
 
-    public Map<String, Integer> collectLemmas(String html) {
-        Document doc = Jsoup.parse(html);
-        String text = doc.text();
-        String[] words = arrayContainsRussianWords(text);
-        HashMap<String, Integer> lemmas = new HashMap<>();
-
-        for (String word : words) {
-            if (word.isBlank()) {
-                continue;
-            }
-
-            List<String> wordBaseForms = luceneMorphology.getMorphInfo(word);
-            if (anyWordBaseBelongToParticle(wordBaseForms)) {
-                continue;
-            }
-
-            List<String> normalForms = luceneMorphology.getNormalForms(word);
-            if (normalForms.isEmpty()) {
-                continue;
-            }
-
-            String normalWord = normalForms.get(0);
-            if(normalWord.length() <= 1){
-                continue;
-            }
-            if (lemmas.containsKey(normalWord)) {
-                lemmas.put(normalWord, lemmas.get(normalWord) + 1);
-            } else {
-                lemmas.put(normalWord, 1);
-            }
-        }
-
-        return lemmas;
-    }
-
-    public Set<String> getLemmaSet(String html) {
+    public List<String> getLemmas(String html) {
         Document doc = Jsoup.parse(html);
         String text = doc.text();
         String[] textArray = arrayContainsRussianWords(text);
-        Set<String> lemmaSet = new HashSet<>();
+        List<String> lemmaSet = new ArrayList<>();
         for (String word : textArray) {
             if (!word.isEmpty() && isCorrectWordForm(word)) {
                 List<String> wordBaseForms = luceneMorphology.getMorphInfo(word);
@@ -76,6 +46,27 @@ public class LemmaFinder {
         }
         return lemmaSet;
     }
+
+    public List<String> getLemmasEn(String html) {
+        Document doc = Jsoup.parse(html);
+        String text = doc.text();
+        String[] textArray = arrayContainsEnglishWords(text);
+        List<String> lemmaSet = new ArrayList<>();
+        for (String word : textArray) {
+            if (!word.isEmpty() && isCorrectWordForm(word)) {
+                List<String> wordBaseForms = luceneMorphology.getMorphInfo(word);
+                if (anyWordBaseBelongToParticle(wordBaseForms)) {
+                    continue;
+                }
+                if (word.length() < 2) {
+                    continue;
+                }
+                lemmaSet.addAll(luceneMorphology.getNormalForms(word));
+            }
+        }
+        return lemmaSet;
+    }
+
 
     private boolean anyWordBaseBelongToParticle(List<String> wordBaseForms) {
         return wordBaseForms.stream().anyMatch(this::hasParticleProperty);
@@ -93,6 +84,13 @@ public class LemmaFinder {
     private String[] arrayContainsRussianWords(String text) {
         return text.toLowerCase(Locale.ROOT)
                 .replaceAll("([^а-я\\s])", " ")
+                .trim()
+                .split("\\s+");
+    }
+
+    private String[] arrayContainsEnglishWords(String text) {
+        return text.toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-zA-Z\\s]", " ")
                 .trim()
                 .split("\\s+");
     }

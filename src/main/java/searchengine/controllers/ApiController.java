@@ -28,9 +28,8 @@ public class ApiController {
     private final IndexingService indexingService;
 
     @PostMapping("/indexPage")
-    public ResponseEntity<String> addSite(String url) {
+    public void addSite(String url) {
         siteService.addSite(url);
-        return ResponseEntity.ok("Сайт добавлен");
     }
 
     @GetMapping("/startIndexing")
