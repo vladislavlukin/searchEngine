@@ -9,9 +9,6 @@ import searchengine.dto.search.SearchData;
 import searchengine.dto.search.SearchFormat;
 import searchengine.dto.search.SearchResponse;
 import searchengine.model.Page;
-import searchengine.repositories.IdentifierRepository;
-import searchengine.repositories.LemmaRepository;
-import searchengine.repositories.SiteRepository;
 import searchengine.service.task.indexing.LemmaFinder;
 import searchengine.service.task.search.RelevanceCalculator;
 import searchengine.service.task.search.SnippetGenerator;
@@ -23,41 +20,27 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SearchServiceImpl implements SearchService {
-    private final SiteRepository siteRepository;
-    private final LemmaRepository lemmaRepository;
-    private final IdentifierRepository identifierRepository;
+    private final RelevanceCalculator relevanceCalculator;
     @Override
     public SearchResponse getResponse(SearchFormat searchFormat) throws IOException {
-        Set<String> lemmaSet = new HashSet<>(LemmaFinder.getInstanceRu().getLemmas(searchFormat.getQuery()));
-        List<SearchData> listData = new ArrayList<>();
-        RelevanceCalculator relevanceCalculator = new RelevanceCalculator();
+        Set<String> lemmaSet = new HashSet<>(LemmaFinder.getInstance().getLemmas(searchFormat.getQuery()));
         SearchResponse response = new SearchResponse();
         if (searchFormat.getQuery().isEmpty()) {
             response.setResult(false);
             response.setError("Задан пустой поисковый запрос");
             return response;
         }
-        relevanceCalculator.addSites(siteRepository,searchFormat);
-        relevanceCalculator.searchRelevance(lemmaSet, lemmaRepository, identifierRepository);
-        Map<Page, Integer> relevanceMap = new HashMap<>(relevanceCalculator.getRelevanceMap());
-        int max = relevanceCalculator.getMaxRank();
-        if(max == 0){
-            return response;
-        }
-        float relevance;
-        Page page;
-        int stopIndex = 10;
-        int i = 0;
-        for (Map.Entry<Page, Integer> entry : sorted(relevanceMap).entrySet()) {
-            if(i++ == stopIndex){
-                break;
-            }
-            relevance = (float) entry.getValue() / max;
-            page = entry.getKey();
-            listData.add(getData(page, relevance, lemmaSet, searchFormat));
-        }
+
+        List<SearchData> listData = relevanceCalculator.searchRelevance(lemmaSet, searchFormat.getSite())
+                .entrySet()
+                .stream()
+                .map(entry -> getData(entry.getKey(), entry.getValue(), lemmaSet, searchFormat))
+                .collect(Collectors.toList());
+
         response.setResult(true);
         response.setCount(listData.size());
+        response.setLimit(searchFormat.getLimit());
+        response.setOffset(searchFormat.getOffset());
         response.setData(listData);
         return response;
 
@@ -66,18 +49,6 @@ public class SearchServiceImpl implements SearchService {
         Document doc = Jsoup.connect(url).get();
         Elements elements = doc.select("title");
         return elements.text();
-    }
-    private Map<Page, Integer> sorted(Map<Page, Integer> map) {
-        return map.entrySet().stream()
-                .sorted(Comparator.comparingInt(e -> -e.getValue()))
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (a, b) -> {
-                            throw new AssertionError();
-                        },
-                        LinkedHashMap::new
-                ));
     }
     private SearchData getData(Page page, float relevance, Set<String> lemmaSet, SearchFormat searchFormat){
         SnippetGenerator snippetGenerator = new SnippetGenerator(lemmaSet, searchFormat.getQuery());

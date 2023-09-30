@@ -11,43 +11,41 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class LemmaFinderTest {
 
-    private LemmaFinder lemmaFinderRu;
-    private LemmaFinder lemmaFinderEn;
+    private LemmaFinder lemmaFinder;
 
     @BeforeEach
     public void setUp() throws IOException {
-        lemmaFinderRu = LemmaFinder.getInstanceRu();
-        lemmaFinderEn = LemmaFinder.getInstanceEn();
+        lemmaFinder = LemmaFinder.getInstance();
     }
 
     @Test
-    public void testGetLemmas() {
+    public void testGetLemmasRu() throws IOException {
         String html = "<html><body>Это текст на русском языке для тестирования</body></html>";
-        List<String> lemmaSet = lemmaFinderRu.getLemmas(html);
+        List<String> lemmas = lemmaFinder.getLemmas(html);
 
-        assertTrue(lemmaSet.contains("этот"));
-        assertTrue(lemmaSet.contains("текст"));
-        assertTrue(lemmaSet.contains("русский"));
-        assertTrue(lemmaSet.contains("язык"));
-        assertTrue(lemmaSet.contains("тестирование"));
+        assertTrue(lemmas.contains("этот"));
+        assertTrue(lemmas.contains("текст"));
+        assertTrue(lemmas.contains("русский"));
+        assertTrue(lemmas.contains("язык"));
+        assertTrue(lemmas.contains("тестирование"));
 
-        assertFalse(lemmaSet.contains("на"));
-        assertFalse(lemmaSet.contains("для"));
+        assertFalse(lemmas.contains("на"));
+        assertFalse(lemmas.contains("для"));
     }
 
     @Test
-    public void testGetLemmasEn() {
+    public void testGetLemmasEn() throws IOException {
         String html = "<html><body>This is some English text for testing</body></html>";
-        List<String> lemmaSet = lemmaFinderEn.getLemmasEn(html);
+        List<String> lemmas = lemmaFinder.getLemmas(html);
 
-        assertTrue(lemmaSet.contains("this"));
-        assertTrue(lemmaSet.contains("some"));
-        assertTrue(lemmaSet.contains("english"));
-        assertTrue(lemmaSet.contains("text"));
-        assertTrue(lemmaSet.contains("for"));
-        assertTrue(lemmaSet.contains("testing"));
+        assertTrue(lemmas.contains("this"));
+        assertTrue(lemmas.contains("some"));
+        assertTrue(lemmas.contains("english"));
+        assertTrue(lemmas.contains("text"));
+        assertTrue(lemmas.contains("for"));
+        assertTrue(lemmas.contains("testing"));
 
-        assertFalse(lemmaSet.contains("is"));
+        assertFalse(lemmas.contains("is"));
     }
 
 }

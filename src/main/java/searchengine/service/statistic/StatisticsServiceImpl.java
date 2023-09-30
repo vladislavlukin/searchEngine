@@ -37,7 +37,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             item.setStatus(site.getStatus().toString());
             item.setStatusTime(site.getCreationTime());
             item.setPages(pageRepository.countBySite(site));
-            item.setLemmas(lemmaRepository.countBySite(site));
+            item.setLemmas(lemmaRepository.countLemmasBySite(site));
             detailed.add(item);
 
         });

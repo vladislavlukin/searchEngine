@@ -5,49 +5,78 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.jdbc.Sql;
 import searchengine.model.Lemma;
 import searchengine.model.Site;
 
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@Sql(scripts = {"/site.sql"})
+@Sql(scripts = {"/sql_script/lemmaTest.sql"})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class LemmaRepositoryTests {
-    private final String LEMMA = "Hours";
-    private Site site;
-
     @Autowired
     private SiteRepository siteRepository;
 
     @Autowired
     private LemmaRepository lemmaRepository;
 
-    @Autowired
-    private TestEntityManager testEntityManager;
+    private Site site;
+    private Set<String> lemmasName;
 
 
     @BeforeEach
     void setUp() {
         site = siteRepository.findAll().iterator().next();
-        this.testEntityManager.persistAndFlush(Lemma.builder().site(site).lemma(LEMMA).build());
+
+        lemmasName = new HashSet<>();
+        lemmasName.add("home");
+        lemmasName.add("house");
+        lemmasName.add("cat");
     }
 
+    @Test
+    public void testFindLemmasByLemmaNames() {
+        List<Site> sites = siteRepository.getAllSites();
+
+        List<Lemma> lemmas = lemmaRepository.findLemmasByLemmaNames(lemmasName, sites);
+
+        assertThat(lemmas.size()).isEqualTo(4);
+        assertThat(lemmas.stream().anyMatch(lemma -> lemma.getLemma().equals("home"))).isTrue();
+        assertThat(lemmas.stream().anyMatch(lemma -> lemma.getLemma().equals("house"))).isTrue();
+    };
 
     @Test
-    public void testGetLemmas() {
-        List<Lemma> lemmas = lemmaRepository.getLemmas(LEMMA, site);
-        assertThat(lemmas.stream().anyMatch(lemma -> lemma.getLemma().equals(LEMMA))).isTrue();
+    public void testFindLemmasByLemmaNamesAndSite() {
+        List<Site> sites = new ArrayList<>();
+        sites.add(site);
+
+        List<Lemma> lemmas = lemmaRepository.findLemmasByLemmaNames(lemmasName, sites);
+
+        assertThat(lemmas.size()).isEqualTo(2);
+        assertThat(lemmas.stream().anyMatch(lemma -> lemma.getLemma().equals("home"))).isTrue();
+        assertThat(lemmas.stream().anyMatch(lemma -> lemma.getLemma().equals("house"))).isTrue();
+        assertThat(lemmas.stream().anyMatch(lemma -> lemma.getSite().equals(site))).isTrue();
     };
 
     @Test
     public void testDeleteLemmaBySite(){
         lemmaRepository.deleteLemmaBySite(site);
+
+        assertThat(lemmaRepository.count()).isEqualTo(3);
+
+        Site site2 = lemmaRepository.findAll().iterator().next().getSite();
+
+        assertThat(site2).isNotEqualTo(site);
+
+        lemmaRepository.deleteLemmaBySite(site2);
+
         assertThat(lemmaRepository.count()).isEqualTo(0);
     };
 }

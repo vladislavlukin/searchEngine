@@ -10,48 +10,25 @@ import java.io.IOException;
 import java.util.*;
 
 public class LemmaFinder {
-    private final LuceneMorphology luceneMorphology;
+    private LuceneMorphology luceneMorphology;
     private static final String WORD_TYPE_REGEX = "\\W\\w&&[^а-яА-Я\\s]";
     private static final String[] particlesNames = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ"};
 
-    public static LemmaFinder getInstanceRu() throws IOException {
-        LuceneMorphology morphology = new RussianLuceneMorphology();
-        return new LemmaFinder(morphology);
-    }
-    public static LemmaFinder getInstanceEn() throws IOException {
-        LuceneMorphology morphology = new EnglishLuceneMorphology();
-        return new LemmaFinder(morphology);
+    public static LemmaFinder getInstance() {
+        return new LemmaFinder();
     }
 
-    public LemmaFinder(LuceneMorphology luceneMorphology) {
-        this.luceneMorphology = luceneMorphology;
-    }
-
-    public List<String> getLemmas(String html) {
+    public List<String> getLemmas(String html) throws IOException {
         Document doc = Jsoup.parse(html);
         String text = doc.text();
         String[] textArray = arrayContainsRussianWords(text);
-        List<String> lemmaSet = new ArrayList<>();
-        for (String word : textArray) {
-            if (!word.isEmpty() && isCorrectWordForm(word)) {
-                List<String> wordBaseForms = luceneMorphology.getMorphInfo(word);
-                if (anyWordBaseBelongToParticle(wordBaseForms)) {
-                    continue;
-                }
-                if(word.length() < 2){
-                    continue;
-                }
-                lemmaSet.addAll(luceneMorphology.getNormalForms(word));
-            }
+        if (Arrays.stream(textArray).allMatch(s -> s == null || s.isEmpty())) {
+            luceneMorphology = new EnglishLuceneMorphology();
+            textArray = arrayContainsEnglishWords(text);
+        }else {
+            luceneMorphology = new RussianLuceneMorphology();
         }
-        return lemmaSet;
-    }
-
-    public List<String> getLemmasEn(String html) {
-        Document doc = Jsoup.parse(html);
-        String text = doc.text();
-        String[] textArray = arrayContainsEnglishWords(text);
-        List<String> lemmaSet = new ArrayList<>();
+        List<String> lemmas = new ArrayList<>();
         for (String word : textArray) {
             if (!word.isEmpty() && isCorrectWordForm(word)) {
                 List<String> wordBaseForms = luceneMorphology.getMorphInfo(word);
@@ -59,14 +36,14 @@ public class LemmaFinder {
                     continue;
                 }
                 if (word.length() < 2) {
+
                     continue;
                 }
-                lemmaSet.addAll(luceneMorphology.getNormalForms(word));
+                lemmas.addAll(luceneMorphology.getNormalForms(word));
             }
         }
-        return lemmaSet;
+        return lemmas;
     }
-
 
     private boolean anyWordBaseBelongToParticle(List<String> wordBaseForms) {
         return wordBaseForms.stream().anyMatch(this::hasParticleProperty);
@@ -90,7 +67,7 @@ public class LemmaFinder {
 
     private String[] arrayContainsEnglishWords(String text) {
         return text.toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-zA-Z\\s]", " ")
+                .replaceAll("([^a-z\\s])", " ")
                 .trim()
                 .split("\\s+");
     }

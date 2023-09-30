@@ -7,11 +7,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.context.SpringBootTest;
+import searchengine.dto.indexing.Status;
 import searchengine.model.Site;
 import searchengine.repositories.IdentifierRepository;
 import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.PageRepository;
 import searchengine.repositories.SiteRepository;
+
+import java.io.IOException;
 
 
 @SpringBootTest
@@ -28,25 +31,46 @@ public class SiteServiceTests {
     @Mock
     private IdentifierRepository identifierRepository;
 
-    @Mock
-    private ThreadManager threadManager;
-
-    @Mock
     private SiteService siteService;
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        siteService = new SiteService(siteRepository, pageRepository, lemmaRepository, identifierRepository, threadManager);
+        siteService = new SiteService(siteRepository, pageRepository, lemmaRepository, identifierRepository);
     }
 
     @Test
-    public void testAddValidSite() {
-        String validUrl = "https://example.com";
+    public void testAddValidSite() throws IOException {
+        String validUrl = "http://example.com";
+
+        when(siteRepository.existsByURL(validUrl)).thenReturn(false);
 
         siteService.addSite(validUrl);
 
-        verify(siteRepository, times(1)).save(any(Site.class));
+        verify(siteRepository).save(argThat(site -> site.getStatus() == Status.INDEXING));
+    }
+
+    @Test
+    public void testAddInvalidSite() {
+        String invalidUrl = "http://examplecom";
+
+        when(siteRepository.existsByURL(invalidUrl)).thenReturn(false);
+
+        siteService.addSite(invalidUrl);
+
+        verify(siteRepository).save(argThat(site -> site.getStatus() == Status.FAILED));
+    }
+
+    @Test
+    public void testAddSiteWithShortUrl() {
+        String shortUrl = "example.com";
+        String url = "http://example.com";
+
+        when(siteRepository.existsByURL(url)).thenReturn(false);
+
+        siteService.addSite(shortUrl);
+
+        verify(siteRepository).save(argThat(site -> url.equals(site.getUrl())));
     }
 
 
@@ -59,7 +83,6 @@ public class SiteServiceTests {
 
         when(siteRepository.findByUrl(existingUrl)).thenReturn(existingSite);
         when(siteRepository.existsByURL(existingUrl)).thenReturn(true);
-        when(threadManager.areThreadsNotAlive()).thenReturn(true);
 
         siteService.addSite(existingUrl);
 

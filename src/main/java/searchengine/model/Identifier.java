@@ -9,6 +9,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 @Entity
+@Table(indexes = {@Index(columnList = "page_id"), @Index(columnList = "lemma_id")})
 public class Identifier {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

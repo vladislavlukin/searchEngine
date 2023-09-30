@@ -1,8 +1,7 @@
 package searchengine.service.task.search;
 
-import lombok.Getter;
-import searchengine.dto.search.SearchFormat;
-import searchengine.model.Identifier;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 import searchengine.repositories.IdentifierRepository;
 import searchengine.model.Lemma;
 import searchengine.repositories.LemmaRepository;
@@ -13,67 +12,90 @@ import searchengine.repositories.SiteRepository;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Getter
+@Component
+@RequiredArgsConstructor
 public class RelevanceCalculator {
-    private final Map<Page, Integer> relevanceMap = new HashMap<>();
-    private final List<Site> siteList = new ArrayList<>();
-    private int maxRank;
-    public void addSites(SiteRepository siteRepository, SearchFormat searchFormat) {
-        siteRepository.findAll().forEach(s -> {
-            if (searchFormat.getSite() == null) {
-                siteList.add(s);
-            } else if (s.getUrl().equals(searchFormat.getSite())) {
-                siteList.add(s);
-            }
-        });
-    }
+    private final SiteRepository siteRepository;
+    private final LemmaRepository lemmaRepository;
+    private final IdentifierRepository identifierRepository;
 
-    public void searchRelevance(Set<String> lemmaSet, LemmaRepository lemmaRepository, IdentifierRepository identifierRepository) {
-        for (Map.Entry<Lemma, Integer> entry : sorted(getLemmaMap(lemmaRepository, lemmaSet)).entrySet()) {
-            Lemma lemma = entry.getKey();
-            List<Identifier> indexList = identifierRepository.getIndexes(lemma);
-            for (Identifier identifier : indexList) {
-                int rank;
-                if (relevanceMap.containsKey(identifier.getPage())) {
-                    rank = relevanceMap.get(identifier.getPage()) + identifier.getNumber();
-                } else {
-                    rank = identifier.getNumber();
-                }
-                calculateMaxRank(rank);
-                relevanceMap.put(identifier.getPage(), rank);
-            }
-        }
-    }
-    private Map<Lemma, Integer> getLemmaMap(LemmaRepository lemmaRepository, Set<String> lemmaSet) {
-        Map<Lemma, Integer> lemmaMap = new HashMap<>();
-        for (String lemma : lemmaSet) {
-            for (Site site : siteList) {
-                List<Lemma> lemmaList = lemmaRepository.getLemmas(lemma, site);
-                for (Lemma l : lemmaList) {
-                    lemmaMap.put(l, l.getFrequency());
-                }
-            }
-        }
-        siteList.clear();
-        return sorted(lemmaMap);
-    }
-    private void calculateMaxRank(int rank) {
-        if (rank > maxRank) {
-            maxRank = rank;
-        }
-    }
-    private Map<Lemma, Integer> sorted(Map<Lemma, Integer> map) {
-        return map.entrySet().stream()
-                .sorted(Comparator.comparingInt(Map.Entry::getValue))
+    public Map<Page, Float> searchRelevance(Set<String> lemmaSet, String url) {
+        List<Site> sites = getSites(url);
+        List<Lemma> lemmaList = lemmaRepository.findLemmasByLemmaNames(lemmaSet, sites);
+
+        Map<Page, Integer> relevanceMap = new HashMap<>();
+        Map<Page, List<Lemma>> pageLemmaMap = pageLemmasMap(lemmaList);
+
+        pageLemmaMap.forEach((page, pageLemmas) -> pageLemmas.forEach(lemma -> relevanceMap.merge(page,
+                identifierRepository.countLemmaNameInPage(lemma, page),
+                Integer::sum)));
+
+        int maxRank = relevanceMap.values().stream().max(Integer::compareTo).orElse(0);
+
+        return relevanceMap.entrySet()
+                .stream()
+                .sorted(Comparator.comparingInt(e -> -e.getValue()))
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (a, b) -> {
-                            throw new AssertionError();
-                        },
+                        entry -> (float) entry.getValue() / maxRank,
+                        (a, b) -> a,
                         LinkedHashMap::new
                 ));
+
+    }
+
+    private List<Site> getSites(String url) {
+        if (url == null) {
+            return new ArrayList<>(siteRepository.getAllSites());
+        } else {
+            return Collections.singletonList(siteRepository.findByUrl(url));
+        }
+    }
+
+    private Map<Page, List<Lemma>> pageLemmasMap(List<Lemma> lemmas) {
+        Map<Page, List<Lemma>> pageLemmaMap = new HashMap<>();
+
+        lemmas.forEach(lemma -> identifierRepository.findPagesByLemma(lemma)
+                .forEach(page -> pageLemmaMap.computeIfAbsent(page, k -> new ArrayList<>()).add(lemma)));
+
+        int maxListSize = pageLemmaMap.values().stream().mapToInt(List::size).max().orElse(0);
+
+        pageLemmaMap.entrySet().removeIf(entry -> entry.getValue().size() != maxListSize);
+
+        return pageLemmaMap;
     }
 }
+/*
+    public List<PageRelevance> searchRelevance(Set<String> lemmaSet, String url) {
+        List<Site> sites = getSites(url);
+        List<Lemma> lemmaList = lemmaRepository.findLemmasByLemmaNames(lemmaSet, sites);
+
+        List<PageRelevance> relevanceList = new ArrayList<>();
+
+        lemmaList.forEach(lemma -> identifierRepository.findPagesByLemma(lemma)
+                .forEach(page -> {
+                    double relevance = identifierRepository.countLemmaNameInPage(lemma, page);
+                    PageRelevance pageRelevance = new PageRelevance();
+                    pageRelevance.setPage(page);
+                    pageRelevance.setRelevance(relevance);
+                    relevanceList.add(pageRelevance);
+                }));
+
+        double maxRank = relevanceList.stream()
+                .map(PageRelevance::getRelevance)
+                .max(Double::compareTo)
+                .orElse(0.0);
+
+        return relevanceList.stream()
+                .sorted(Comparator.comparingInt(e -> (int) -e.getRelevance()))
+                .map(pageRelevance -> {
+                    double normalizedRelevance = pageRelevance.getRelevance() / maxRank;
+                    pageRelevance.setRelevance(normalizedRelevance);
+                    return pageRelevance;
+                })
+                .collect(Collectors.toList());
+    }
+ */
+
 
 

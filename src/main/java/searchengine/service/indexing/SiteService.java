@@ -25,12 +25,11 @@ public class SiteService {
     private final PageRepository pageRepository;
     private final LemmaRepository lemmaRepository;
     private final IdentifierRepository identifierRepository;
-    private final ThreadManager threadManager;
 
     public void addSite(String inputUrl) {
         String url = normalizeUrl(inputUrl);
 
-        if (siteRepository.existsByURL(url) && threadManager.areThreadsNotAlive()) {
+        if (siteRepository.existsByURL(url)) {
             deleteSite(url);
         }else {
             siteRepository.save(fillingSite(url));

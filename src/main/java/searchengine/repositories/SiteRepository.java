@@ -6,6 +6,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import searchengine.model.Site;
 
+import java.util.List;
+
 @Repository
 public interface SiteRepository extends CrudRepository<Site, Integer> {
 
@@ -18,4 +20,6 @@ public interface SiteRepository extends CrudRepository<Site, Integer> {
     @Query("select s from Site s where s.url =:url")
     Site findByUrl(@Param("url") String url);
 
+    @Query("select s from Site s")
+    List<Site> getAllSites();
 }

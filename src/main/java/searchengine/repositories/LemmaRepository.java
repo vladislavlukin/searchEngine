@@ -10,14 +10,16 @@ import searchengine.model.Lemma;
 import searchengine.model.Site;
 
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
-    @Query("select l from Lemma l where l.lemma=:lemma and l.site=:site")
-    List<Lemma> getLemmas (@Param("lemma") String lemma, @Param("site") Site site);
+
+    @Query("select l from Lemma l where l.lemma in :lemmas and l.site in :sites")
+    List<Lemma> findLemmasByLemmaNames(@Param("lemmas") Set<String> lemmas, @Param("sites") List<Site> sites);
 
     @Query("select count(p) from Lemma p where p.site=:site")
-    int countBySite(@Param("site") Site site);
+    int countLemmasBySite(@Param("site") Site site);
 
     @Transactional
     @Modifying

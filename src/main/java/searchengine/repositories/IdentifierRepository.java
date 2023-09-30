@@ -8,14 +8,20 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.Identifier;
 import searchengine.model.Lemma;
+import searchengine.model.Page;
 import searchengine.model.Site;
 
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface IdentifierRepository extends CrudRepository<Identifier, Integer> {
-    @Query("select i from Identifier i where i.lemma=:lemma")
-    List<Identifier> getIndexes (@Param("lemma") Lemma lemma);
+
+    @Query("select i.page from Identifier i where i.lemma=:lemma")
+    List<Page> findPagesByLemma(@Param("lemma") Lemma lemma);
+
+    @Query("select i.number from Identifier i where i.lemma=:lemma and i.page=:page")
+    int countLemmaNameInPage(@Param("lemma") Lemma lemma, @Param("page") Page page);
 
     @Transactional
     @Modifying

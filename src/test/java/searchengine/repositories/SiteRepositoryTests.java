@@ -11,7 +11,7 @@ import searchengine.model.Site;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@Sql(scripts = {"/site.sql"})
+@Sql(scripts = {"/sql_script/siteTest.sql"})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class SiteRepositoryTests {
     private final String URL = "https://example.com";

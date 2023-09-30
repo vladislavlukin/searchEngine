@@ -28,11 +28,6 @@ public class LemmaIndexer {
 
     private List<String> getLemmas(Page page) throws IOException {
         String content = page.getContent();
-        List<String> lemmaListRu = LemmaFinder.getInstanceRu().getLemmas(content);
-        if (lemmaListRu.isEmpty()){
-            return LemmaFinder.getInstanceEn().getLemmasEn(content);
-        }else {
-            return lemmaListRu;
-        }
+        return LemmaFinder.getInstance().getLemmas(content);
     }
 }

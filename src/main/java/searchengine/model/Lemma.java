@@ -10,6 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 @Entity
+@Table(indexes = {@Index(columnList = "lemma"), @Index(columnList = "site_id")})
 public class Lemma {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
