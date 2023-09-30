@@ -65,37 +65,6 @@ public class RelevanceCalculator {
         return pageLemmaMap;
     }
 }
-/*
-    public List<PageRelevance> searchRelevance(Set<String> lemmaSet, String url) {
-        List<Site> sites = getSites(url);
-        List<Lemma> lemmaList = lemmaRepository.findLemmasByLemmaNames(lemmaSet, sites);
-
-        List<PageRelevance> relevanceList = new ArrayList<>();
-
-        lemmaList.forEach(lemma -> identifierRepository.findPagesByLemma(lemma)
-                .forEach(page -> {
-                    double relevance = identifierRepository.countLemmaNameInPage(lemma, page);
-                    PageRelevance pageRelevance = new PageRelevance();
-                    pageRelevance.setPage(page);
-                    pageRelevance.setRelevance(relevance);
-                    relevanceList.add(pageRelevance);
-                }));
-
-        double maxRank = relevanceList.stream()
-                .map(PageRelevance::getRelevance)
-                .max(Double::compareTo)
-                .orElse(0.0);
-
-        return relevanceList.stream()
-                .sorted(Comparator.comparingInt(e -> (int) -e.getRelevance()))
-                .map(pageRelevance -> {
-                    double normalizedRelevance = pageRelevance.getRelevance() / maxRank;
-                    pageRelevance.setRelevance(normalizedRelevance);
-                    return pageRelevance;
-                })
-                .collect(Collectors.toList());
-    }
- */
 
 
 
