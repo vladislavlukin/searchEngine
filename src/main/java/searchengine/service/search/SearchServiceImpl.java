@@ -1,9 +1,6 @@
 package searchengine.service.search;
 
 import lombok.RequiredArgsConstructor;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 import searchengine.dto.search.SearchData;
 import searchengine.dto.search.SearchFormat;
@@ -21,55 +18,58 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SearchServiceImpl implements SearchService {
     private final RelevanceCalculator relevanceCalculator;
+    private final SnippetGenerator snippetGenerator;
     @Override
     public SearchResponse getResponse(SearchFormat searchFormat) throws IOException {
         Set<String> lemmaSet = new HashSet<>(LemmaFinder.getInstance().getLemmas(searchFormat.getQuery()));
-        SearchResponse response = new SearchResponse();
+
         if (searchFormat.getQuery().isEmpty()) {
-            response.setResult(false);
-            response.setError("Задан пустой поисковый запрос");
-            return response;
+            return SearchResponse.builder()
+                    .error("Empty search query provided")
+                    .result(false)
+                    .build();
         }
 
         List<SearchData> listData = relevanceCalculator.searchRelevance(lemmaSet, searchFormat.getSite())
                 .entrySet()
                 .stream()
-                .map(entry -> getData(entry.getKey(), entry.getValue(), lemmaSet, searchFormat))
+                .map(entry -> createSearchDataFromPage(entry.getKey(), entry.getValue(), lemmaSet))
                 .collect(Collectors.toList());
 
-        response.setResult(true);
-        response.setCount(listData.size());
-        response.setLimit(searchFormat.getLimit());
-        response.setOffset(searchFormat.getOffset());
-        response.setData(listData);
-        return response;
+        int resultsFound = listData.size();
+
+        if (listData.isEmpty()){
+            return SearchResponse.builder()
+                    .error("No results found")
+                    .result(false).build();
+        }
+
+        int limit = searchFormat.getLimit();
+        int offset = searchFormat.getOffset();
+
+        listData = listData.stream().skip(offset).limit(limit).collect(Collectors.toList());
+
+        return SearchResponse.builder()
+                .result(true)
+                .data(listData)
+                .count(resultsFound)
+                .build();
 
     }
-    private String getTitle(String url) throws Exception{
-        Document doc = Jsoup.connect(url).get();
-        Elements elements = doc.select("title");
-        return elements.text();
-    }
-    private SearchData getData(Page page, float relevance, Set<String> lemmaSet, SearchFormat searchFormat){
-        SnippetGenerator snippetGenerator = new SnippetGenerator(lemmaSet, searchFormat.getQuery());
-        SearchData data = new SearchData();
+    private SearchData createSearchDataFromPage(Page page, float relevance, Set<String> lemmaSet){
         String path = page.getPath();
         String siteName = page.getSite().getName();
-        String copySite = page.getSite().getUrl();
-        String site = copySite.substring(0, copySite.length() - 1);
-        String snippet = snippetGenerator.getSnippet(page.getContent());
-        String title = "";
-        try {
-            title = getTitle(site + path);
-        }catch (Exception ex){
-            ex.printStackTrace();
-        }
-        data.setSite(site);
-        data.setRelevance(relevance);
-        data.setSiteName(siteName);
-        data.setUri(path);
-        data.setSnippet(snippet);
-        data.setTitle(title);
-        return data;
+        String site = page.getSite().getUrl();
+        String snippet = snippetGenerator.generateSnippet(page.getContent(), lemmaSet);
+        String title = page.getTitle();
+
+        return SearchData.builder()
+                .uri(path)
+                .relevance(relevance)
+                .site(site)
+                .siteName(siteName)
+                .snippet(snippet)
+                .title(title)
+                .build();
     }
 }

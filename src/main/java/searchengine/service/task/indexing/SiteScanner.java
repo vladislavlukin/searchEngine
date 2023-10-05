@@ -28,6 +28,7 @@ public class SiteScanner extends RecursiveTask<CopyOnWriteArrayList<Page>> {
     public CopyOnWriteArrayList<Page> compute() {
         CopyOnWriteArrayList<Page> pages = new CopyOnWriteArrayList<>();
         List<SiteScanner> list = new CopyOnWriteArrayList<>();
+
         try {
             Thread.sleep(250);
             Document doc = Jsoup.connect(url)
@@ -38,7 +39,7 @@ public class SiteScanner extends RecursiveTask<CopyOnWriteArrayList<Page>> {
             Elements elements = doc.select("a[href]");
 
             if (isSinglePageWithURL(elements)){
-                Page mainPage = fillingPage(url);
+                Page mainPage = fillingPage(url, doc.title());
                 pages.add(mainPage);
                 return pages;
             }
@@ -50,7 +51,7 @@ public class SiteScanner extends RecursiveTask<CopyOnWriteArrayList<Page>> {
                     work.fork();
                     list.add(work);
                     listCopy.add(attributeUrl);
-                    Page page = fillingPage(attributeUrl);
+                    Page page = fillingPage(attributeUrl, doc.title());
                     if (!pages.contains(page) && page != null) {
                         pages.add(page);
                     }
@@ -67,7 +68,7 @@ public class SiteScanner extends RecursiveTask<CopyOnWriteArrayList<Page>> {
         return pages;
     }
 
-    private Page fillingPage(String urlSite) {
+    private Page fillingPage(String urlSite, String title) {
         String content = "no content";
         int statusCode = 200;
         String uri = (urlSite).contains(site.getUrl()) ? urlSite.substring(site.getUrl().length()) : urlSite;
@@ -88,6 +89,7 @@ public class SiteScanner extends RecursiveTask<CopyOnWriteArrayList<Page>> {
         }
         return Page.builder()
                 .content(content)
+                .title(title)
                 .path(uri)
                 .site(site)
                 .code(statusCode)

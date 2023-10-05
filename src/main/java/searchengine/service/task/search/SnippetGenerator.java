@@ -2,73 +2,80 @@ package searchengine.service.task.search;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-
+import org.springframework.stereotype.Component;
 import java.util.*;
 
+import org.apache.commons.text.similarity.LevenshteinDistance;
+
+@Component
 public class SnippetGenerator {
-    private final Set<String> lemma;
-    private final String textQuery;
-    private final Set<String> words = new HashSet<>();
-    public SnippetGenerator(Set<String> lemma, String textQuery) {
-        this.lemma = lemma;
-        this.textQuery = textQuery;
-    }
-    public String getSnippet(String text) {
-        String resultSnippet = " ";
-        String[] token = getReformatText(text).split(" ");
-        Map<Integer, String> ratingSnippets = new HashMap<>();
-        for (String snippet : getAllSnippets(token)) {
-            List<String> listSnippet = new ArrayList<>();
-            for (String word : words) {
-                if(snippet.contains(word)){
-                    listSnippet.add(snippet);
-                }
+    public String resultSnippet(String text){
+        String[] words = text.split("\\s+");
+
+        int limitSnippet = 0;
+        int countActualWords = 0;
+        int currentIndex = 0;
+
+        StringBuilder stringBuilder = new StringBuilder();
+        Map<Integer, StringBuilder> relevantSnippet = new TreeMap<>();
+
+        while (currentIndex < words.length){
+            if(limitSnippet == 30){
+                relevantSnippet.put(countActualWords, stringBuilder);
+                stringBuilder = new StringBuilder();
+                countActualWords = 0;
+                limitSnippet = 0;
             }
-            ratingSnippets.put(listSnippet.size(), snippet);
-        }
-        for (Map.Entry<Integer, String> entry : ratingSnippets.entrySet()){
-            resultSnippet = entry.getValue();
+
+            stringBuilder.append(words[currentIndex]).append(" ");
+
+            if(words[currentIndex].startsWith("<strong>")){
+                countActualWords++;
+            }
+            limitSnippet++;
+            currentIndex++;
         }
 
-        return resultSnippet;
-    }
-    private String getReformatText(String text){
-        Document doc = Jsoup.parse(text);
-        String allText = "";
-        String[] token = doc.text().split(" ");
-        for (String beginnerWord : lemma){
-            String[] copyToken = allText.split(" ");
-            if(!allText.isEmpty()){
-                token = copyToken;
-            }
-            String copyText = " ";
-            for (String finalWord : token){
-                int allowableLengthWord = 3;
-                if((textQuery.contains(finalWord) || finalWord.contains(beginnerWord))
-                        && beginnerWord.length() >= allowableLengthWord
-                        && finalWord.length() >= allowableLengthWord){
-                    words.add(finalWord);
-                    copyText += " <strong>" + finalWord + "</strong>";
-                }else {copyText += " " + finalWord;}
-            }
-            allText = copyText;
+        if (!stringBuilder.isEmpty()) {
+            relevantSnippet.put(countActualWords, stringBuilder);
         }
-        return allText;
-    }
-    private List<String> getAllSnippets(String[] token){
-        int stopIndex = 0;
-        int countWordOfSnippet = 30;
-        String snippet = " ";
-        List<String> listSnippet = new ArrayList<>();
-        for (String word : token){
-            snippet += " " + word;
-            if(stopIndex == countWordOfSnippet){
-                listSnippet.add(snippet);
-                stopIndex = 0;
-                snippet = " ";
-            }
-            stopIndex++;
+
+        if (relevantSnippet.isEmpty()){
+            return text;
         }
-        return listSnippet;
+
+        return relevantSnippet.values()
+                .stream()
+                .reduce((first, second) -> second)
+                .map(StringBuilder::toString)
+                .orElse("");
+    }
+
+    public String generateSnippet(String htmlText, Set<String> wordList) {
+        Document document = Jsoup.parse(htmlText);
+
+        String[] words = document.text().split("\\s+");
+
+        StringBuilder textParts = new StringBuilder();
+        LevenshteinDistance distance = new LevenshteinDistance();
+
+        int threshold = 2;
+        int currentIndex = 0;
+
+        while (currentIndex < words.length) {
+            String word = words[currentIndex];
+            boolean containsWordInSearchWord = wordList.stream().anyMatch(searchWord -> {
+                int levenshteinDistance = distance.apply(searchWord, word);
+                return levenshteinDistance <= threshold;
+            });
+            if (containsWordInSearchWord) {
+                textParts.append("<strong>").append(words[currentIndex]).append("</strong>").append(" ");
+            } else {
+                textParts.append(words[currentIndex]).append(" ");
+            }
+            currentIndex++;
+        }
+
+        return resultSnippet(textParts.toString());
     }
 }

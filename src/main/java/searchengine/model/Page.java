@@ -17,6 +17,7 @@ public class Page {
     @ManyToOne()
     private Site site;
     private String path;
+    private String title;
     private int code;
     @Column(columnDefinition = "MEDIUMTEXT")
     private String content;
